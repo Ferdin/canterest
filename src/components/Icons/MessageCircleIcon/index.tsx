@@ -4,7 +4,7 @@ import IconsWrapper from "../IconsWrapper";
 export default function MessageCircleIcon() {
   return (
     <IconsWrapper>
-      <MessageCircleMore />
+      <MessageCircleMore className="hover:bg-olive-300 w-10 h-10 px-2 rounded-md cursor-pointer" />
     </IconsWrapper>
   );
 }

@@ -4,7 +4,7 @@ import IconsWrapper from "../IconsWrapper";
 export default function SquarePlusIcon() {
   return (
     <IconsWrapper>
-      <SquarePlus />
+      <SquarePlus className="hover:bg-olive-300 w-10 h-10 px-2 rounded-md cursor-pointer" />
     </IconsWrapper>
   );
 }
