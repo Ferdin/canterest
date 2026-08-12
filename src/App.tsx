@@ -19,7 +19,7 @@ function App() {
           <ExpandBoard />
         </div>
       )}
-      <div className={`${activeMenu ? `w-[70%]` : `w-[95%]`} transition`}>
+      <div className={`${activeMenu ? `w-[70%]` : `w-full`} transition`}>
         <MainNav />
         <Board />
       </div>
