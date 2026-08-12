@@ -11,7 +11,7 @@ function App() {
   const activeMenu = useSelector((state: RootState) => state.ui.activeMenu);
   return (
     <MainWrapper>
-      <div className={`flex-1`}>
+      <div className={``}>
         <SideNav />
       </div>
       {activeMenu && (
@@ -19,7 +19,7 @@ function App() {
           <ExpandBoard />
         </div>
       )}
-      <div className={activeMenu ? `w-[70%]` : `w-[95%]`}>
+      <div className={`${activeMenu ? `w-[70%]` : `w-[95%]`} transition`}>
         <MainNav />
         <Board />
       </div>

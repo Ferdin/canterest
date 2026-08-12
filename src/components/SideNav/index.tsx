@@ -13,7 +13,7 @@ export default function SideNav() {
   const activeMenu = useSelector((state: RootState) => state.ui.activeMenu);
   return (
     <div
-      className={`min-h-screen sticky top-0 bg-white flex flex-col items-center border-r border-olive-300 ${activeMenu ? "w-20" : ""}`}
+      className={`min-h-screen sticky top-0 bg-white flex flex-col items-center border-r border-olive-300 ${activeMenu ? "w-20" : ""} transition`}
     >
       <SiteIcon />
       <HomeIcon />
