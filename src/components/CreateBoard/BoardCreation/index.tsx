@@ -1,18 +1,18 @@
-import { Pin } from "lucide-react";
-import CreationWrapper from "../Wrappers/CreationWrapper";
+import { WalletCards } from "lucide-react";
 import CreationIconWrapper from "../Wrappers/CreationIconWrapper";
+import CreationWrapper from "../Wrappers/CreationWrapper";
 import CreationColWrapper from "../Wrappers/CreationColWrapper";
 
-export default function PinCreation() {
+export default function BoardCreation() {
   return (
     <CreationWrapper>
       <CreationIconWrapper>
-        <Pin className="w-16 h-16 px-4" />
+        <WalletCards className="w-16 h-16 px-4" />
       </CreationIconWrapper>
       <CreationColWrapper>
-        <h4 className="text-lg font-normal">Pin</h4>
+        <h4 className="text-lg font-normal">Board</h4>
         <p className="text-sm text-gray-500">
-          Post your photos or videos and add links, sticker, effects and more
+          Organize a collection of your Pins by creating a board.
         </p>
       </CreationColWrapper>
     </CreationWrapper>

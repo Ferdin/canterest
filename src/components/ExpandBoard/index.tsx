@@ -5,6 +5,8 @@ import type { RootState } from "../../app/store";
 import { menuTitles } from "../../features/ui/uiConfig";
 import NotificationWrapper from "../NotificationWrapper";
 import PinCreation from "../CreateBoard/PinCreation";
+import BoardCreation from "../CreateBoard/BoardCreation";
+import CollageCreation from "../CreateBoard/CollageCreation";
 
 export default function ExpandBoard() {
   const dispatch = useDispatch();
@@ -23,6 +25,8 @@ export default function ExpandBoard() {
       </div>
       <NotificationWrapper>
         <PinCreation />
+        <BoardCreation />
+        <CollageCreation />
       </NotificationWrapper>
     </div>
   );
