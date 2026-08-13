@@ -3,10 +3,11 @@ import { useDispatch, useSelector } from "react-redux";
 import { closeMenu } from "../../features/ui/uiSlice";
 import type { RootState } from "../../app/store";
 import { menuTitles } from "../../features/ui/uiConfig";
-import NotificationWrapper from "../NotificationWrapper";
+import BoardWrapper from "../BoardWrapper";
 import PinCreation from "../CreateBoard/PinCreation";
 import BoardCreation from "../CreateBoard/BoardCreation";
 import CollageCreation from "../CreateBoard/CollageCreation";
+import Notifications from "../Notifications";
 
 export default function ExpandBoard() {
   const dispatch = useDispatch();
@@ -23,11 +24,14 @@ export default function ExpandBoard() {
           onClick={() => dispatch(closeMenu())}
         />
       </div>
-      <NotificationWrapper>
-        <PinCreation />
-        <BoardCreation />
-        <CollageCreation />
-      </NotificationWrapper>
+      {activeMenu == "createBoard" && (
+        <BoardWrapper>
+          <PinCreation />
+          <BoardCreation />
+          <CollageCreation />
+        </BoardWrapper>
+      )}
+      {activeMenu == "notification" && <Notifications />}
     </div>
   );
 }

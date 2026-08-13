@@ -1,11 +1,9 @@
 import type { ReactNode } from "react";
 
-interface NotificationWrapperProps {
+interface BoardWrapperProps {
   children: ReactNode;
 }
 
-export default function NotificationWrapper({
-  children,
-}: NotificationWrapperProps) {
+export default function BoardWrapper({ children }: BoardWrapperProps) {
   return <div className="flex flex-col py-4">{children}</div>;
 }
