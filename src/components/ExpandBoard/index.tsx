@@ -8,6 +8,7 @@ import PinCreation from "../CreateBoard/PinCreation";
 import BoardCreation from "../CreateBoard/BoardCreation";
 import CollageCreation from "../CreateBoard/CollageCreation";
 import Notifications from "../Notifications";
+import MessageBoard from "../MessageBoard";
 
 export default function ExpandBoard() {
   const dispatch = useDispatch();
@@ -32,6 +33,7 @@ export default function ExpandBoard() {
         </BoardWrapper>
       )}
       {activeMenu == "notification" && <Notifications />}
+      {activeMenu == "message" && <MessageBoard />}
     </div>
   );
 }
