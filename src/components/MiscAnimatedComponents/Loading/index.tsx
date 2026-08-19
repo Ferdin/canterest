@@ -6,65 +6,136 @@ import { useGSAP } from "@gsap/react";
 gsap.registerPlugin(useGSAP);
 
 export default function Loading() {
-  const container = useRef(null);
-  const circleRef = useRef(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const circleOneRef = useRef<HTMLDivElement>(null);
+  const circleTwoRef = useRef<HTMLDivElement>(null);
+  const circleThreeRef = useRef<HTMLDivElement>(null);
 
   // Configuration variables
-  const centerX = 200; // X coordinate of the center point
-  const centerY = 200; // Y coordinate of the center point
-  const radius = 100; // Distance from the center point
+  // const centerX = 200; // X coordinate of the center point
+  // const centerY = 200; // Y coordinate of the center point
+  const maxRadius = 25; // Distance from the center point
+  const TWO_THIRDS_PI = (Math.PI * 2) / 3;
 
   useGSAP(
     () => {
-      // Create an object to hold the animated angle variable
-      const rawData = { angle: 0 };
+      // Create an object to hold animated angle and radius variable
+      const rawData = { angle: 0, radius: 0 };
+      const container = containerRef.current;
+
+      if (!container) return;
+
+      const { width, height } = container.getBoundingClientRect();
+      const centerX = width / 2;
+      const centerY = height / 2;
 
       gsap.to(rawData, {
         angle: Math.PI * 2, // Animate through a full circle (360 degrees in radians)
-        duration: 4, // Time taken for one full orbit (in seconds)
+        duration: 1, // Time taken for one full orbit (in seconds)
         repeat: -1, // Infinite loop
         ease: "none", // Constant speed
         onUpdate: () => {
           // Calculate the new X and Y positions using trigonometry
-          const x = centerX + Math.cos(rawData.angle) * radius;
-          const y = centerY + Math.sin(rawData.angle) * radius;
-
-          // Apply the positions to the DOM element
-          gsap.set(circleRef.current, { x, y, xPercent: -50, yPercent: -50 });
+          [
+            circleOneRef.current,
+            circleTwoRef.current,
+            circleThreeRef.current,
+          ].map((el, i) => {
+            const a = rawData.angle + i * TWO_THIRDS_PI;
+            const x = centerX + Math.cos(a) * rawData.radius;
+            const y = centerY + Math.sin(a) * rawData.radius;
+            gsap.set(el, { x, y, xPercent: -50, yPercent: -50, ease: "none" });
+          });
         },
       });
+      gsap.to(rawData, {
+        radius: maxRadius,
+        duration: 1.5,
+        yoyo: true,
+        repeat: -1,
+        ease: "none",
+      });
+
+      gsap.to(circleOneRef.current, {
+        scale: 0.5,
+        yoyo: true,
+        repeat: -1,
+        duration: 1,
+        ease: "none",
+      });
+      gsap.to(circleTwoRef.current, {
+        scale: 0.5,
+        yoyo: true,
+        repeat: -1,
+        duration: 1,
+        ease: "none",
+        delay: 0.5,
+      });
+      gsap.to(circleThreeRef.current, {
+        scale: 0.5,
+        yoyo: true,
+        repeat: -1,
+        duration: 1,
+        ease: "none",
+        delay: 1,
+      });
+
+      gsap.to(
+        [circleOneRef.current, circleTwoRef.current, circleThreeRef.current],
+        {
+          backgroundColor: "#15ff00",
+          duration: 1.5,
+          repeat: -1,
+          yoyo: true,
+        },
+      );
     },
-    { scope: container },
+    { scope: containerRef },
   );
 
   return (
-    <div ref={container}>
-      {/* The center anchor point (Optional visual guide) */}
+    <div
+      ref={containerRef}
+      style={{
+        position: "relative",
+        width: "100px",
+        height: "100px",
+      }}
+    >
       <div
+        ref={circleOneRef}
         style={{
           position: "absolute",
-          left: centerX,
-          top: centerY,
-          width: "6px",
-          height: "6px",
-          background: "red",
-          borderRadius: "50%",
-          transform: "translate(-50%, -50%)",
+          top: "0px",
+          bottom: "0px",
+          width: "25px",
+          height: "25px",
+          background: "#ff00f2",
+          borderRadius: "25px",
         }}
       />
-
-      {/* Your custom Circle component */}
       <div
-        ref={circleRef}
+        ref={circleTwoRef}
         style={{
           position: "absolute",
-          left: 0,
-          top: 0,
-          width: "30px",
-          height: "30px",
-          background: "#00e6ff",
-          borderRadius: "50%",
-          boxShadow: "0 0 10px #00e6ff",
+          top: "0px",
+          bottom: "0px",
+          width: "25px",
+          height: "25px",
+          background: "#ff00f2",
+          borderRadius: "25px",
+        }}
+      />
+      <div
+        ref={circleThreeRef}
+        style={{
+          position: "absolute",
+          top: "0px",
+          bottom: "0px",
+          width: "25px",
+          height: "25px",
+          background: "#ff00f2",
+          borderRadius: "25px",
         }}
       />
     </div>
