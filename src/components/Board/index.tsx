@@ -1,9 +1,9 @@
-import Loading from "../MiscAnimatedComponents/Loading";
+// import Loading from "../MiscAnimatedComponents/Loading";
 
 export default function Board() {
   return (
     <div>
-      <Loading />
+      {/* <Loading /> */}
     </div>
   );
 }
