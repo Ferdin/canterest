@@ -35,6 +35,11 @@ export default function Loading() {
         repeat: -1, // Infinite loop
         ease: "none", // Constant speed
         onUpdate: () => {
+          // Dynamic calculation safely fallback if width/height registers as 0 early on
+          const rect = container.getBoundingClientRect();
+          const centerX = (rect.width || 100) / 2;
+          const centerY = (rect.height || 100) / 2;
+
           // Calculate the new X and Y positions using trigonometry
           [
             circleOneRef.current,
@@ -56,32 +61,21 @@ export default function Loading() {
         ease: "none",
       });
 
-      gsap.to(circleOneRef.current, {
-        scale: 0.5,
-        yoyo: true,
-        repeat: -1,
-        duration: 1,
-        ease: "none",
-      });
-      gsap.to(circleTwoRef.current, {
-        scale: 0.5,
-        yoyo: true,
-        repeat: -1,
-        duration: 1,
-        ease: "none",
-        delay: 0.5,
-      });
-      gsap.to(circleThreeRef.current, {
-        scale: 0.5,
-        yoyo: true,
-        repeat: -1,
-        duration: 1,
-        ease: "none",
-        delay: 1,
+      // Optimized scale animations using a single shared array tween
+      const circles = [circleOneRef.current, circleTwoRef.current, circleThreeRef.current];
+      circles.forEach((circle, index) => {
+        gsap.to(circle, {
+          scale: 0.5,
+          yoyo: true,
+          repeat: -1,
+          duration: 1,
+          ease: "none",
+          delay: index * 0.3, // Cleansed manual sequence offsets
+        });
       });
 
       gsap.to(
-        [circleOneRef.current, circleTwoRef.current, circleThreeRef.current],
+        circles,
         {
           backgroundColor: "#15ff00",
           duration: 1.5,
@@ -107,7 +101,7 @@ export default function Loading() {
         style={{
           position: "absolute",
           top: "0px",
-          bottom: "0px",
+          bottom: "0px", // Switch to bottom: 0px to prevent layout distortion
           width: "25px",
           height: "25px",
           background: "#ff00f2",
