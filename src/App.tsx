@@ -8,6 +8,7 @@ import type { RootState } from "./app/store";
 import ExpandBoard from "./components/ExpandBoard";
 import { useAuth } from "./hooks/useAuth";
 import Loading from "./components/MiscAnimatedComponents/Loading";
+import InitialLoginBox from "./components/LoginComponents/InitialLoginBox";
 
 function App() {
   const activeMenu = useSelector((state: RootState) => state.ui.activeMenu);
@@ -40,9 +41,7 @@ function App() {
       </div>
     </MainWrapper>
   ) : (
-    <div className="fixed inset-0 bg-black/50">
-
-    </div>
+    <InitialLoginBox/>
   )
 }
 

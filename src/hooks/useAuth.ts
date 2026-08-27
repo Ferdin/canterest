@@ -11,7 +11,7 @@ interface User {
 export function useAuth() {
     const [user, setUser] = useState<User | null> (null);
     const [authorized, setAuthorized] = useState<boolean>(false);
-    const [loading, setLoading] = useState(true); // true while we're checking
+    const [loading, setLoading] = useState<boolean>(true); // true while we're checking
 
     useEffect(() => {
         const checkAuth = async () => {
