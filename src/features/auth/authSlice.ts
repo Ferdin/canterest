@@ -1,5 +1,7 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type { User } from "./types";
+import { authApi } from './authApi';
+import type { AppDispatch } from '../../app/store';
 
 interface AuthState {
     token: string | null;
@@ -31,4 +33,11 @@ const authSlice = createSlice({
 })
 
 export const { setCredentials, setUser, logout } = authSlice.actions;
+
+// thunk: clears auth state AND wipes any cached RTK Query data (pins, boards, etc.)
+export const logoutAndClearCache = () => (dispatch: AppDispatch) => {
+    dispatch(logout());
+    dispatch(authApi.util.resetApiState());
+};
+
 export default authSlice.reducer;

@@ -114,6 +114,10 @@ export default function InitialLoginBox(){
                         <GoogleLogin
                             onSuccess={handleGoogleSuccess}
                             onError={() => setErrorMsg("Google sign-in failed. Please try again.")}
+                            width="100%" 
+                            containerProps={{
+                                className: "w-full"
+                            }}
                         />
                         <div className="flex flex-row gap-2 pb-8">
                             <span>

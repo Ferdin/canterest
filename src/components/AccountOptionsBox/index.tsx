@@ -1,4 +1,9 @@
+import { useAppDispatch } from "../../app/hooks";
+import { logoutAndClearCache } from "../../features/auth/authSlice"
+
 export default function AccountOptionsBox() {
+    const dispatch = useAppDispatch();
+
     return (
         <div 
             className="absolute
@@ -68,6 +73,7 @@ export default function AccountOptionsBox() {
                     hover:bg-gray-100
                     cursor-pointer
                 "
+                onClick={() => dispatch(logoutAndClearCache())}
             >
                 Log out
             </button>
