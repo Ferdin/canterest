@@ -1,4 +1,3 @@
-import { useDispatch, useSelector } from "react-redux";
 import "./App.css";
 import Board from "./components/Board";
 import MainNav from "./components/MainNav";
@@ -11,11 +10,12 @@ import InitialLoginBox from "./components/LoginComponents/InitialLoginBox";
 import { useGetMeQuery } from "./features/auth/authApi";
 import { logout, setUser } from "./features/auth/authSlice";
 import { useEffect } from "react";
+import { useAppDispatch, useAppSelector } from "./app/hooks";
 
 function App() {
-  const dispatch = useDispatch();
-  const token = useSelector((state: RootState) => state.auth.token);
-  const activeMenu = useSelector((state: RootState) => state.ui.activeMenu);
+  const dispatch = useAppDispatch();
+  const token = useAppSelector((state: RootState) => state.auth.token);
+  const activeMenu = useAppSelector((state: RootState) => state.ui.activeMenu);
 
   // skip the call entirely if there's no token - same short-circuit as before
   const { data, isLoading, isError } = useGetMeQuery(undefined, {

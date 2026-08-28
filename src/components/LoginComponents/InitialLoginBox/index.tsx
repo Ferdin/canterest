@@ -1,12 +1,12 @@
-import { useDispatch } from "react-redux";
 import SiteIcon from "../../Icons/SiteIcon";
 import { useState } from "react";
 import { useGoogleLoginMutation, useLoginMutation, useRegisterMutation } from "../../../features/auth/authApi";
 import { GoogleLogin } from "@react-oauth/google";
 import { setCredentials } from "../../../features/auth/authSlice";
+import { useAppDispatch } from "../../../app/hooks";
 
 export default function InitialLoginBox(){
-    const dispatch = useDispatch();
+    const dispatch = useAppDispatch();
     const [mode, setMode] = useState<"login" | "register">("login");
 
     const [email, setEmail] = useState<string>("");

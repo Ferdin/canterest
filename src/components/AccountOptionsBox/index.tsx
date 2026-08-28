@@ -1,8 +1,9 @@
-import { useAppDispatch } from "../../app/hooks";
+import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import { logoutAndClearCache } from "../../features/auth/authSlice"
 
 export default function AccountOptionsBox() {
     const dispatch = useAppDispatch();
+    const user = useAppSelector((state) => state.auth.user);
 
     return (
         <div 
@@ -24,13 +25,13 @@ export default function AccountOptionsBox() {
                     Currently in
                 </p>
                 <p className="mt-1 text-sm font-semibold text-gray-900">
-                    Ferdin Norbert
+                    {user?.name ?? "..."}
                 </p>
                 <p className="text-sm text-gray-500">
                     Personal
                 </p>
                 <p className="text-sm text-gray-500">
-                    ferdinmultimatic@gmail.com
+                    {user?.email ?? ""}
                 </p>
             </div>
 

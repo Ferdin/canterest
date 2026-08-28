@@ -1,5 +1,4 @@
 import { X } from "lucide-react";
-import { useDispatch, useSelector } from "react-redux";
 import { closeMenu } from "../../features/ui/uiSlice";
 import type { RootState } from "../../app/store";
 import { menuTitles } from "../../features/ui/uiConfig";
@@ -9,11 +8,12 @@ import BoardCreation from "../CreateBoard/BoardCreation";
 import CollageCreation from "../CreateBoard/CollageCreation";
 import Notifications from "../Notifications";
 import MessageBoard from "../MessageBoard";
+import { useAppDispatch, useAppSelector } from "../../app/hooks";
 
 export default function ExpandBoard() {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
 
-  const activeMenu = useSelector((state: RootState) => state.ui.activeMenu);
+  const activeMenu = useAppSelector((state: RootState) => state.ui.activeMenu);
   return (
     <div className="min-h-screen sticky top-0 bg-white border-r border-olive-300">
       <div className="flex justify-between items-center px-6 py-6 w-full">

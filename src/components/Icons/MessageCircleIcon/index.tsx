@@ -1,11 +1,11 @@
 import { MessageCircleMore } from "lucide-react";
 import IconsWrapper from "../IconsWrapper";
-import { useDispatch } from "react-redux";
 import { setActiveMenu } from "../../../features/ui/uiSlice";
 import Tooltip from "../../ToolTip";
+import { useAppDispatch } from "../../../app/hooks";
 
 export default function MessageCircleIcon() {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
   return (
     <Tooltip content="Messages" position="right">
       <IconsWrapper>

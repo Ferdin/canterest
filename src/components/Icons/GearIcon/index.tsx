@@ -1,10 +1,10 @@
 import { Settings } from "lucide-react";
 import IconsWrapper from "../IconsWrapper";
-import { useDispatch } from "react-redux";
 import { setActiveMenu } from "../../../features/ui/uiSlice";
+import { useAppDispatch } from "../../../app/hooks";
 
 export default function GearIcon() {
-  const dispatch = useDispatch();
+  const dispatch = useAppDispatch();
 
   return (
     <IconsWrapper>
