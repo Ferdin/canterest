@@ -1,4 +1,4 @@
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import "./App.css";
 import Board from "./components/Board";
 import MainNav from "./components/MainNav";
@@ -6,13 +6,32 @@ import MainWrapper from "./components/MainWrapper";
 import SideNav from "./components/SideNav";
 import type { RootState } from "./app/store";
 import ExpandBoard from "./components/ExpandBoard";
-import { useAuth } from "./hooks/useAuth";
 import Loading from "./components/MiscAnimatedComponents/Loading";
 import InitialLoginBox from "./components/LoginComponents/InitialLoginBox";
+import { useGetMeQuery } from "./features/auth/authApi";
+import { logout, setUser } from "./features/auth/authSlice";
+import { useEffect } from "react";
 
 function App() {
+  const dispatch = useDispatch();
+  const token = useSelector((state: RootState) => state.auth.token);
   const activeMenu = useSelector((state: RootState) => state.ui.activeMenu);
-  const { authorized, user, loading } = useAuth();
+
+  // skip the call entirely if there's no token - same short-circuit as before
+  const { data, isLoading, isError } = useGetMeQuery(undefined, {
+    skip: !token,
+  })
+
+  useEffect(() => {
+    if (data?.authorized) {
+      dispatch(setUser(data.user));
+    } else if (isError || (data && !data.authorized)) {
+      dispatch(logout());
+    }
+  }, [data, isError, dispatch]);
+
+  const loading = !!token && isLoading;
+  const authorized = !!token && !!data?.authorized;
 
   if (loading) {
     return (
