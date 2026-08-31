@@ -8,8 +8,8 @@ import { useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "./app/hooks";
 import { Routes, Route } from "react-router-dom";
 import AppLayout from "./components/AppLayout";
-import ProtectedRoute from "./components/ProtectedRoute";
 import PinCreationTool from "./components/PinCreationTool";
+import Board from "./components/Board";
 
 function App() {
   const dispatch = useAppDispatch();
@@ -40,9 +40,9 @@ function App() {
 
   return (
     <Routes>
-      <Route path="/" element={token ? <AppLayout/> : <InitialLoginBox/>}/>
-      <Route element={<ProtectedRoute/>}>
-        <Route path="/pin-creation-tool" element={<PinCreationTool/>}/>
+      <Route path="/" element={token ? <AppLayout/> : <InitialLoginBox/>}>
+        <Route index element={<Board/>}/>
+        <Route path="pin-creation-tool" element={<PinCreationTool/>} />
       </Route>
     </Routes>
   ) 

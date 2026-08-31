@@ -1,5 +1,5 @@
+import { Outlet } from "react-router-dom";
 import { useAppSelector } from "../app/hooks";
-import Board from "./Board";
 import ExpandBoard from "./ExpandBoard";
 import MainNav from "./MainNav";
 import MainWrapper from "./MainWrapper";
@@ -18,7 +18,7 @@ export default function AppLayout() {
             )}
             <div className={`${activeMenu ? `w-[70%]` : `w-full`} transition`}>
                 <MainNav />
-                <Board />
+                <Outlet />
             </div>
         </MainWrapper>
     )
