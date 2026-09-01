@@ -18,20 +18,81 @@ export default function PinCreationTool(){
                 </div>
             </div>
         </div>
-        <div className="relative w-lg">
-            <input 
-                type="text" 
-                name="text" 
-                placeholder="Tell everyone what your Pin is about"
-                id="text-input"
-                className="peer border-gray-300 border rounded-2xl h-18 w-full px-4 pt-5 pb-1 outline-none text-base transition-all"
-            />
-            <label
-                htmlFor="text-input"
-                className="absolute left-4 top-2 text-xs font-semibold text-gray-80000 pointer-events-none"
-            >
-                Title
-            </label>
+        <div className="flex flex-col gap-6">
+            <div className="relative w-lg">
+                <input 
+                    type="text" 
+                    name="can_pin_title" 
+                    placeholder="Tell everyone what your Pin is about"
+                    id="can_pin_title"
+                    className="peer border-gray-300 border rounded-2xl h-18 w-full px-4 pt-5 pb-1 outline-none text-base transition-all"
+                    />
+                <label
+                    htmlFor="can_pin_title"
+                    className="absolute left-4 top-2 text-xs font-semibold text-gray-80000 pointer-events-none"
+                    >
+                    Title
+                </label>
+            </div>
+            <div className="relative w-lg">
+                <textarea 
+                    name="can_pin_desc" 
+                    placeholder="Describe your Pin"
+                    id="can_pin_desc"
+                    className="peer border-gray-300 border rounded-2xl h-18 w-full px-4 pt-7 pb-1 outline-none text-base transition-all resize-none"
+                    />
+                <label
+                    htmlFor="can_pin_desc"
+                    className="absolute left-4 top-2 text-xs font-semibold text-gray-80000 pointer-events-none"
+                    >
+                    Description
+                </label>
+            </div>
+            <div className="relative w-lg">
+                <input 
+                    type="text" 
+                    name="can_pin_link" 
+                    placeholder="Add a Link"
+                    id="can_pin_link"
+                    className="peer border-gray-300 border rounded-2xl h-18 w-full px-4 pt-5 pb-1 outline-none text-base transition-all"
+                    />
+                <label
+                    htmlFor="can_pin_link"
+                    className="absolute left-4 top-2 text-xs font-semibold text-gray-80000 pointer-events-none"
+                    >
+                    Link
+                </label>
+            </div>
+            <div className="relative w-lg">
+                <input 
+                    type="text" 
+                    name="can_pin_board" 
+                    placeholder="Search for a tag"
+                    id="can_pin_board"
+                    className="peer border-gray-300 border rounded-2xl h-18 w-full px-4 pt-5 pb-1 outline-none text-base transition-all"
+                    />
+                <label
+                    htmlFor="can_pin_board"
+                    className="absolute left-4 top-2 text-xs font-semibold text-gray-80000 pointer-events-none"
+                    >
+                    Board
+                </label>
+            </div>
+            <div className="relative w-lg">
+                <input 
+                    type="text" 
+                    name="can_pin_tag" 
+                    placeholder="Search for a tag"
+                    id="can_pin_tag"
+                    className="peer border-gray-300 border rounded-2xl h-18 w-full px-4 pt-5 pb-1 outline-none text-base transition-all"
+                    />
+                <label
+                    htmlFor="can_pin_tag"
+                    className="absolute left-4 top-2 text-xs font-semibold text-gray-80000 pointer-events-none"
+                    >
+                    Tagged Topics
+                </label>
+            </div>
         </div>
     </div>);
 }
