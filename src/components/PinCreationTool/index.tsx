@@ -1,7 +1,10 @@
 import { Images } from "lucide-react";
+import UploadMediaTextInput from "../PinCreationToolElements/UploadMediaElements/UploadMediaTextInput";
+import UploadMediaTextArea from "../PinCreationToolElements/UploadMediaElements/UploadMediaTextArea";
 
 export default function PinCreationTool(){
-    return (<div className="px-56 pt-10 flex flex-row gap-8 mb-4">
+    return (
+    <div className="px-56 pt-10 flex flex-row gap-8 mb-4">
         <div>
             <div className="relative w-96 h-96 bg-olive-300 flex border rounded-2xl py-10 cursor-pointer">
                 <div className="flex flex-col items-center justify-center w-full h-full pb-12">
@@ -19,50 +22,9 @@ export default function PinCreationTool(){
             </div>
         </div>
         <div className="flex flex-col gap-6">
-            <div className="relative w-lg">
-                <input 
-                    type="text" 
-                    name="can_pin_title" 
-                    placeholder="Tell everyone what your Pin is about"
-                    id="can_pin_title"
-                    className="peer border-gray-300 border rounded-2xl h-18 w-full px-4 pt-5 pb-1 outline-none text-base transition-all"
-                    />
-                <label
-                    htmlFor="can_pin_title"
-                    className="absolute left-4 top-2 text-xs font-semibold text-gray-80000 pointer-events-none"
-                    >
-                    Title
-                </label>
-            </div>
-            <div className="relative w-lg">
-                <textarea 
-                    name="can_pin_desc" 
-                    placeholder="Describe your Pin"
-                    id="can_pin_desc"
-                    className="peer border-gray-300 border rounded-2xl h-18 w-full px-4 pt-7 pb-1 outline-none text-base transition-all resize-none"
-                    />
-                <label
-                    htmlFor="can_pin_desc"
-                    className="absolute left-4 top-2 text-xs font-semibold text-gray-80000 pointer-events-none"
-                    >
-                    Description
-                </label>
-            </div>
-            <div className="relative w-lg">
-                <input 
-                    type="text" 
-                    name="can_pin_link" 
-                    placeholder="Add a Link"
-                    id="can_pin_link"
-                    className="peer border-gray-300 border rounded-2xl h-18 w-full px-4 pt-5 pb-1 outline-none text-base transition-all"
-                    />
-                <label
-                    htmlFor="can_pin_link"
-                    className="absolute left-4 top-2 text-xs font-semibold text-gray-80000 pointer-events-none"
-                    >
-                    Link
-                </label>
-            </div>
+            <UploadMediaTextInput name="can_pin_title" placeholder="Tell everyone what your Pin is about" id="can_pin_title" labelText="Title"/>
+            <UploadMediaTextArea name="can_pin_desc" placeholder="Describe your Pin" id="can_pin_desc" labelText="Description"/>
+            <UploadMediaTextInput name="can_pin_link" placeholder="Add a Link" id="can_pin_link" labelText="Link"/>
             <div className="relative w-lg">
                 <input 
                     type="text" 
