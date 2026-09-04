@@ -123,9 +123,84 @@ export default function UploadMediaBoardComboBox() {
                 onFocus={() => setIsOpen(true)} 
                 onChange={handleInputChange} 
                 onKeyDown={handleKeyDown} 
-                className="border-gray-300 border rounded-2xl h-18 w-full px-4 pt-5 pb-1 outline-none text-base transition-all focus:border-black" role="combobox" aria-expanded={isOpen} aria-controls="board-listbox" aria-autocomplete="list" 
+                className="border-gray-300 border rounded-2xl h-18 w-full px-4 pt-5 pb-1 outline-none text-base transition-all focus:border-black" 
+                role="combobox" 
+                aria-expanded={isOpen} 
+                aria-controls="board-listbox" 
+                aria-autocomplete="list" 
             />
+            {/**
+             * Floating label
+             */}
             <label htmlFor="can_pin_board" className="absolute left-4 top-2 text-xs font-semibold text-gray-800 pointer-events-none" > Board </label>
+            {/**
+             * Dropdown
+             */}
+             {isOpen && (
+                <div
+                    id="board-listbox"
+                    role="listbox"
+                    className="absolute left-0 right-0 top-full mt-2 bg-white border border-gray-200 rounded-2xl shadow-lg overflow-hidden z-50"
+                >
+                    {filteredBoards.length > 0 ? (
+                        <div className="py-2">
+                            {filteredBoards.map((board, index) => (
+                                <button
+                                    key={board.id}
+                                    type="button"
+                                    role="option"
+                                    aria-selected={
+                                        selectedBoard?.id === board.id
+                                    }
+                                    onMouseDown={(event) => {
+                                        event.preventDefault();
+                                    }}
+                                    onClick={()=>
+                                        handleSelectBoard(board)
+                                    }
+                                    className={
+                                        `w-full px-4 py-3 text-left flex items-center gap-3 transition-colors ${
+                                            index === highlightedIndex
+                                                ? "bg-gray-100"
+                                                : "hover:bg-ray-50"
+                                        }`
+                                    }
+                                >
+                                    {/*Board icon*/}
+                                    <div className="w-10 h-10 rounded-lg bg-gray-200 flex items-center justify-center shrink-0">
+                                        <span className="text-gray-500">
+                                            📌
+                                        </span>
+                                    </div>
+                                    <span className="text-sm font-medium text-gray-900">
+                                        {board.name}
+                                    </span>
+                                </button>
+                            ))}
+                        </div>
+                    ): (
+                        <div className="border-t border-gray-100">
+                            <button
+                                type="button"
+                                onMouseDown={(event) => {
+                                    event.preventDefault();
+                                }}
+                                onClick={()=>{
+                                    console.log("Create new board");
+                                }}
+                                className="w-full px-4 py-4 text-left flex items-center gap-3 hover:bg-gray-50 transition-colors"
+                            >
+                                <div className="w-10 h-10 rounded-lg border border-gray-300 flex items-center justify-center">
+                                    <span className="text-xl">+</span>
+                                </div>
+                                <span className="text-sm font-semibold text-gray-900">
+                                    Create new board
+                                </span>
+                            </button>
+                        </div>
+                    )}
+                </div>    
+             )}
         </div>
     );
 }

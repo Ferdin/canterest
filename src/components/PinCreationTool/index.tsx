@@ -1,8 +1,31 @@
 import { Images } from "lucide-react";
 import UploadMediaTextInput from "../PinCreationToolElements/UploadMediaElements/UploadMediaTextInput";
 import UploadMediaTextArea from "../PinCreationToolElements/UploadMediaElements/UploadMediaTextArea";
+import UploadMediaGenericComboBox,{ type ComboBoxItem } from "../PinCreationToolElements/UploadMediaElements/UploadMediaGenericComboBox";
+import { useState } from "react";
+
+interface Board extends ComboBoxItem {}
+interface Topic extends ComboBoxItem {}
+
+const boards: Board[] = [
+    { id: 1, name: "Web Development" },
+    { id: 2, name: "Travel" },
+    { id: 3, name: "Photography" },
+    { id: 4, name: "Food" },
+    { id: 5, name: "Interior Design" },
+];
+
+const topics: Topic[] = [
+    { id: 1, name: "Minimalism" },
+    { id: 2, name: "DIY" },
+    { id: 3, name: "Street Photography" },
+    { id: 4, name: "Vegan" },
+    { id: 5, name: "Small Space Living" },
+];
 
 export default function PinCreationTool(){
+    const [selectedBoard, setSelectedBoard] = useState<Board | null>(null);
+    const [selectedTopics, setSelectedTopics] = useState<Topic[]>([]);
     return (
     <div className="px-56 pt-10 flex flex-row gap-8 mb-4">
         <div>
@@ -25,36 +48,36 @@ export default function PinCreationTool(){
             <UploadMediaTextInput name="can_pin_title" placeholder="Tell everyone what your Pin is about" id="can_pin_title" labelText="Title"/>
             <UploadMediaTextArea name="can_pin_desc" placeholder="Describe your Pin" id="can_pin_desc" labelText="Description"/>
             <UploadMediaTextInput name="can_pin_link" placeholder="Add a Link" id="can_pin_link" labelText="Link"/>
-            <div className="relative w-lg">
-                <input 
-                    type="text" 
-                    name="can_pin_board" 
-                    placeholder="Search for a board."
-                    id="can_pin_board"
-                    className="peer border-gray-300 border rounded-2xl h-18 w-full px-4 pt-5 pb-1 outline-none text-base transition-all"
-                    />
-                <label
-                    htmlFor="can_pin_board"
-                    className="absolute left-4 top-2 text-xs font-semibold text-gray-80000 pointer-events-none"
-                    >
-                    Board
-                </label>
-            </div>
-            <div className="relative w-lg">
-                <input 
-                    type="text" 
-                    name="can_pin_tag" 
-                    placeholder="Search for a tag"
-                    id="can_pin_tag"
-                    className="peer border-gray-300 border rounded-2xl h-18 w-full px-4 pt-5 pb-1 outline-none text-base transition-all"
-                    />
-                <label
-                    htmlFor="can_pin_tag"
-                    className="absolute left-4 top-2 text-xs font-semibold text-gray-80000 pointer-events-none"
-                    >
-                    Tagged Topics
-                </label>
-            </div>
+            <UploadMediaGenericComboBox
+                items={boards}
+                label="Board"
+                name="can_pin_board"
+                id="can_pin_board"
+                placeholder="Search for a board."
+                value={selectedBoard}
+                onChange={(value) => setSelectedBoard(value as Board | null)}
+                onCreateNew={(query) => {
+                    // POST /boards, then push the new board into `boards`
+                    console.log("Create new board:", query);
+                }}
+                createLabel={() => "Create new board"}
+                renderIcon={() => <span>📌</span>}
+            />
+            <UploadMediaGenericComboBox
+                items={topics}
+                label="Topics"
+                name="tagged_topics"
+                id="tagged_topics"
+                placeholder="Search for topics to tag."
+                multiple
+                value={selectedTopics}
+                onChange={(value) => setSelectedTopics(value as Topic[])}
+                onCreateNew={(query) => {
+                    console.log("Create new topic:", query);
+                }}
+                createLabel={(query) => `Add "${query}" as a topic`}
+                renderIcon={() => <span>#</span>}
+            />
             <div className="flex flex-col">
                 <span className="text-xs font-semibold">Tag Products</span>
                 <button className="text-sm font-semibold bg-olive-200 py-1 w-48 rounded-lg mt-2">Add Products</button>
