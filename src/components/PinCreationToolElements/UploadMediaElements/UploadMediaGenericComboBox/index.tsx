@@ -182,31 +182,32 @@ export default function UploadMediaGenericComboBox<T extends ComboBoxItem>({
                     ))}
                 </div>
             )}
- 
-            <input
-                ref={inputRef}
-                type="text"
-                name={name}
-                id={id}
-                value={query}
-                placeholder={placeholder}
-                autoComplete="off"
-                onFocus={() => setIsOpen(true)}
-                onChange={handleInputChange}
-                onKeyDown={handleKeyDown}
-                className="border-gray-300 border rounded-2xl h-18 w-full px-4 pt-5 pb-1 outline-none text-base transition-all focus:border-black"
-                role="combobox"
-                aria-expanded={isOpen}
-                aria-controls={`${id}-listbox`}
-                aria-autocomplete="list"
-            />
-            {/* Floating label */}
-            <label
-                htmlFor={id}
-                className="absolute left-4 top-2 text-xs font-semibold text-gray-800 pointer-events-none"
-            >
-                {label}
-            </label>
+            <div className="relative">
+                <input
+                    ref={inputRef}
+                    type="text"
+                    name={name}
+                    id={id}
+                    value={query}
+                    placeholder={placeholder}
+                    autoComplete="off"
+                    onFocus={() => setIsOpen(true)}
+                    onChange={handleInputChange}
+                    onKeyDown={handleKeyDown}
+                    className="border-gray-300 border rounded-2xl h-18 w-full px-4 pt-5 pb-1 outline-none text-base transition-all focus:border-black"
+                    role="combobox"
+                    aria-expanded={isOpen}
+                    aria-controls={`${id}-listbox`}
+                    aria-autocomplete="list"
+                />
+                {/* Floating label */}
+                <label
+                    htmlFor={id}
+                    className="absolute left-4 top-2 text-xs font-semibold text-gray-800 pointer-events-none"
+                >
+                    {label}
+                </label>
+            </div>
  
             {/* Dropdown */}
             {isOpen && (
