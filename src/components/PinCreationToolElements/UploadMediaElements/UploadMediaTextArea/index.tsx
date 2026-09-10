@@ -1,11 +1,15 @@
+import type { ChangeEventHandler } from "react";
+
 interface UploadMediaTextAreaProps {
     name: string;
     placeholder: string;
     id: string;
     labelText: string;
+    onChange?: ChangeEventHandler<HTMLTextAreaElement>;
+    value?: string;
 }
 
-export default function UploadMediaTextArea({name, placeholder, id, labelText}: UploadMediaTextAreaProps){
+export default function UploadMediaTextArea({name, placeholder, id, labelText, onChange, value}: UploadMediaTextAreaProps){
     return (
         <div className="relative w-lg">
             <textarea 
@@ -13,6 +17,8 @@ export default function UploadMediaTextArea({name, placeholder, id, labelText}: 
                 placeholder={placeholder}
                 id={id}
                 className="peer border-gray-300 border rounded-2xl h-18 w-full px-4 pt-7 pb-1 outline-none text-base transition-all resize-none"
+                value={value}
+                onChange={onChange}
                 />
             <label
                 htmlFor={name}

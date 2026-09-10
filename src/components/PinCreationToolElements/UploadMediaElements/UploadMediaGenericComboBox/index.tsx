@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 export interface ComboBoxItem {
-    id: string | number;
+    id: number;
     name: string;
 }
 
