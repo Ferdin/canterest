@@ -7,9 +7,10 @@ interface UploadMediaTextInputProps {
     labelText: string;
     onChange?: ChangeEventHandler<HTMLInputElement>;
     value?: string;
+    disabled?: boolean;
 }
 
-export default function UploadMediaTextInput({name, placeholder, id, labelText, onChange, value}: UploadMediaTextInputProps) {
+export default function UploadMediaTextInput({name, placeholder, id, labelText, onChange, value, disabled}: UploadMediaTextInputProps) {
     return(
         <div className="relative w-lg">
                 <input 
@@ -18,8 +19,9 @@ export default function UploadMediaTextInput({name, placeholder, id, labelText, 
                     placeholder={placeholder}
                     id={id}
                     value={value}
-                    className="peer border-gray-300 border rounded-2xl h-18 w-full px-4 pt-5 pb-1 outline-none text-base transition-all"
+                    className={`peer border-gray-300 border rounded-2xl h-18 w-full px-4 pt-5 pb-1 outline-none text-base transition-all ${disabled ? "bg-olive-300" : ""}`}
                     onChange={onChange}
+                    disabled={disabled}
                     />
                 <label
                     htmlFor={id}

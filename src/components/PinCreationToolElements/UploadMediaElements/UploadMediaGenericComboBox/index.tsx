@@ -11,6 +11,7 @@ interface ComboBoxProps <T extends ComboBoxItem> {
     name: string;
     id: string;
     placeholder?: string;
+    disabled?: boolean;
 
     multiple?: boolean;
 
@@ -40,6 +41,7 @@ export default function UploadMediaGenericComboBox<T extends ComboBoxItem>({
     onCreateNew,
     createLabel = (query) => `Create "${query}"`,
     renderIcon,
+    disabled
 }:ComboBoxProps<T>){
     const [query, setQuery] = useState<string>("");
     const [isOpen, setIsOpen] = useState<boolean>(false);
@@ -194,11 +196,12 @@ export default function UploadMediaGenericComboBox<T extends ComboBoxItem>({
                     onFocus={() => setIsOpen(true)}
                     onChange={handleInputChange}
                     onKeyDown={handleKeyDown}
-                    className="border-gray-300 border rounded-2xl h-18 w-full px-4 pt-5 pb-1 outline-none text-base transition-all focus:border-black"
+                    className={`border-gray-300 border rounded-2xl h-18 w-full px-4 pt-5 pb-1 outline-none text-base transition-all focus:border-black ${disabled ? "bg-olive-300" : ""}`}
                     role="combobox"
                     aria-expanded={isOpen}
                     aria-controls={`${id}-listbox`}
                     aria-autocomplete="list"
+                    disabled={disabled}
                 />
                 {/* Floating label */}
                 <label

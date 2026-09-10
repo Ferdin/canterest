@@ -161,6 +161,7 @@ export default function PinCreationTool(){
                         labelText="Title"
                         onChange={(e) => setTitle(e.target.value)}
                         value={title}
+                        disabled={previewUrl ? false : true}
                     />
                     <UploadMediaTextArea 
                         name="can_pin_desc" 
@@ -169,6 +170,7 @@ export default function PinCreationTool(){
                         labelText="Description"
                         onChange={(e) => setDescription(e.target.value)}
                         value={description}
+                        disabled={previewUrl ? false : true}
                     />
                     <UploadMediaTextInput 
                         name="can_pin_link" 
@@ -177,6 +179,7 @@ export default function PinCreationTool(){
                         labelText="Link"
                         value={link}
                         onChange={(e) => setLink(e.target.value)}
+                        disabled={previewUrl ? false : true}
                     />
                     <UploadMediaGenericComboBox
                         items={boards}
@@ -192,6 +195,7 @@ export default function PinCreationTool(){
                         }}
                         createLabel={() => "Create new board"}
                         renderIcon={() => <span>📌</span>}
+                        disabled={previewUrl ? false : true}
                         />
                     <UploadMediaGenericComboBox
                         items={topics}
@@ -207,6 +211,7 @@ export default function PinCreationTool(){
                         }}
                         createLabel={(query) => `Add "${query}" as a topic`}
                         renderIcon={() => <span>#</span>}
+                        disabled={previewUrl ? false : true}
                         />
                     <div className="flex flex-col">
                         <span className="text-xs font-semibold">Tag Products</span>
