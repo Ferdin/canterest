@@ -3,7 +3,8 @@ import UploadMediaTextInput from "../PinCreationToolElements/UploadMediaElements
 import UploadMediaTextArea from "../PinCreationToolElements/UploadMediaElements/UploadMediaTextArea";
 import UploadMediaGenericComboBox,{ type ComboBoxItem } from "../PinCreationToolElements/UploadMediaElements/UploadMediaGenericComboBox";
 import { useState, useRef } from "react";
-import { useCreatePinMutation, useUploadMediaMutation } from "../../features/pins/pinsApi";
+import { useCreatePinMutation, useGetMyDraftsQuery, useUpdatePinMutation, useUploadMediaMutation } from "../../features/pins/pinsApi";
+import Loading from "../MiscAnimatedComponents/Loading";
 
 interface Board extends ComboBoxItem {}
 interface Topic extends ComboBoxItem {}
@@ -30,7 +31,7 @@ export default function PinCreationTool(){
     const [selectPins, setSelectPins] = useState<boolean>(false);
 
     // form state
-    const [file, setFile] = useState<File | null>(null);
+    //const [file, setFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [title, setTitle] = useState<string>("");
     const [description, setDescription] = useState<string>("");
@@ -46,48 +47,78 @@ export default function PinCreationTool(){
 
     const [uploadMedia] = useUploadMediaMutation();
     const [createPin] = useCreatePinMutation();
+    const [updatePin] = useUpdatePinMutation();
+
+    const [draftPinId, setDraftPinId] = useState<number | null>(null);
 
     const handleSelectPins = () => {
         setSelectPins((prev) => !prev)
     }
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { data: drafts, isLoading: draftsLoading  } = useGetMyDraftsQuery();
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const selected = e.target.files?.[0];
         if (!selected) return;
-        setFile(selected);
+        //setFile(selected);
         setPreviewUrl(URL.createObjectURL(selected));
-    }
-
-    const handlePublish = async () => {
         setErrorMsg(null);
-
-        if(!file) {
-            setErrorMsg("Please upload media before publishing");
-            return;
-        }
 
         try {
             const formData = new FormData();
-            formData.append("file", file);
+            formData.append("file", selected);
             const { media_url } = await uploadMedia(formData).unwrap();
 
-            await createPin({
+            // create as a draft immediatedly, before any other field is filled in
+            const draft = await createPin({
                 media_url,
-                title: title || undefined,
-                description: description || undefined,
-                link: link || undefined,
-                board_id: selectedBoard?.id,
-                topics: selectedTopics.map((t) => t.name),
-                alt_text: altText || undefined,
-                mark_as_ai_modified: markAsAiModified,
-                includes_ai_generated_person: includesAiPerson,
-                allow_comments: allowComments,
-                show_similar_products: showSimilarProducts,
+                status: "draft",
+            }).unwrap();
+
+            setDraftPinId(draft.id);
+        } catch (err: any) {
+            setErrorMsg("Failed to upload media. Please try again.");
+        }
+    }
+
+    const handlePublish = async () => {
+        if (!draftPinId) {
+            setErrorMsg("Please upload media before publishing.");
+            return;
+        }
+        setErrorMsg(null);
+
+        // if(!file) {
+        //     setErrorMsg("Please upload media before publishing");
+        //     return;
+        // }
+
+        try {
+            // const formData = new FormData();
+            // formData.append("file", file);
+            // const { media_url } = await uploadMedia(formData).unwrap();
+
+            await updatePin({
+                id: draftPinId,
+                updates: {
+                    status: "published",
+                    title: title || undefined,
+                    description: description || undefined,
+                    link: link || undefined,
+                    board_id: selectedBoard?.id,
+                    topics: selectedTopics.map((t) => t.name),
+                    alt_text: altText || undefined,
+                    mark_as_ai_modified: markAsAiModified,
+                    includes_ai_generated_person: includesAiPerson,
+                    allow_comments: allowComments,
+                    show_similar_products: showSimilarProducts,
+                },
             }).unwrap();
 
             // reset form on success
-            setFile(null);
+            // setFile(null);
             setPreviewUrl(null);
+            setDraftPinId(null);
             setTitle("");
             setDescription("");
             setLink("");
@@ -327,7 +358,7 @@ export default function PinCreationTool(){
                 <div className="relative inline-flex items-center justify-center cursor-pointer" onClick={handleSelectPins}>
                     <Folder className="w-12 h-12 " strokeWidth={1.5}/>
                     <span className="absolute top-[55%] left-1/2 -translate-x-1/2 -translate-y-1/2 text-xs font-bold">
-                        1
+                        ({drafts?.length ?? 0})
                     </span>
                 </div>
                 <div className="relative inline-flex items-center justify-center py-4">
@@ -336,13 +367,45 @@ export default function PinCreationTool(){
             </div>) :
             (<div className="flex flex-col">
                 <div className="flex justify-between items-center px-4 py-2">
-                    <h2 className="font-semibold text-lg">Pin drafts (1)</h2>
+                    <h2 className="font-semibold text-lg">Pin drafts {drafts?.length ?? 0}</h2>
                     <X onClick={handleSelectPins} className="cursor-pointer"/>
                 </div>
                 <div className="flex justify-center">
                     <button className="font-medium bg-olive-200 w-full rounded-lg mx-4 my-4 py-2">Create a Pin</button>
                 </div>
                 <hr className="mt-2 border-olive-300"/>    
+                <div>
+                    {draftsLoading && (
+                        <Loading/>
+                    )}
+                    {!draftsLoading && drafts?.length === 0 && (
+                        <p className="text-sm text-gray-500 text-center py-4">No drafts yet.</p>
+                    )}
+                    {drafts?.map((draft) => (
+                        <div
+                            key={draft.id}
+                            className="flex items-center gap-3 p-2 rounded-lg hover:bg-olive-100 cursor-pointer"
+                        >
+                            <img
+                                src={draft.media_url}
+                                alt={draft.title || "Untitled draft"}
+                                className="w-12 h-12 object-cover rounded-lg shrink-0"
+                            />
+                            <div className="flex flex-col min-w-0">
+                                <span className="text-sm font-medium truncate">
+                                    {draft.title || "Untitled"}
+                                </span>
+                                <span className="text-xs text-gray-500">
+                                    {draft.days_until_expiration === 0
+                                        ? "Expires today"
+                                        : `Expires in ${draft.days_until_expiration} day${
+                                            draft.days_until_expiration === 1 ? "" : "s"
+                                        }`}
+                                </span>
+                            </div>
+                        </div>
+                    ))}
+                </div>
             </div>)}
         </div>
     </div>

@@ -7,6 +7,7 @@ interface UploadResponse {
 
 interface PinCreate {
     media_url: string;
+    status?: "draft" | "published";
     title?: string;
     description?: string;
     link?: string;
@@ -23,6 +24,8 @@ interface PinCreate {
 interface PinOut extends PinCreate {
     id: number;
     owner_id: number;
+    created_at: string;
+    days_until_expiration: number | null;
 }
 
 export const pinsApi = createApi({
@@ -56,7 +59,26 @@ export const pinsApi = createApi({
             query: () => "/pins",
             providesTags: ["Pin"],
         }),
+        // add PATCH mutation + a way to query drafts
+        updatePin: builder.mutation<PinOut, { id: number; updates: Partial<PinCreate> }>({
+            query: ({ id, updates }) => ({
+                url: `/pins/${id}`,
+                method: "PATCH",
+                body: updates,
+            }),
+            invalidatesTags: ["Pin"],
+        }),
+        getMyDrafts: builder.query<PinOut[], void>({
+            query: () => "/pins?mine=true&status=draft",
+            providesTags: ["Pin"],
+        }),
     }),
 });
 
-export const { useUploadMediaMutation, useCreatePinMutation, useGetPinsQuery } = pinsApi;
+export const { 
+    useUploadMediaMutation, 
+    useCreatePinMutation,
+    useUpdatePinMutation, 
+    useGetPinsQuery,
+    useGetMyDraftsQuery
+} = pinsApi;
