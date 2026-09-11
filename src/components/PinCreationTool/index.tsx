@@ -129,7 +129,7 @@ export default function PinCreationTool(){
                     />
                     <div
                         onClick={() => fileInputRef.current?.click()} 
-                        className="relative w-96 h-96 bg-olive-300 flex border rounded-2xl py-10 cursor-pointer"
+                        className={`relative w-96 h-96 ${previewUrl ? "": "bg-olive-300 border rounded-2xl py-10"} flex  cursor-pointer`}
                     >
                         {previewUrl ? (
                             <img
@@ -146,12 +146,16 @@ export default function PinCreationTool(){
                         </div>
                         )}
                     </div>
-                    <hr className="border-olive-300 my-6  w-96" />
-                    <div className="w-96 h-12 bg-olive-300 flex border rounded-2xl cursor-pointer hover:bg-olive-400">
-                        <div className="flex items-center justify-center w-full h-full text-sm font-semibold">
-                            Save from URL
+                    {!previewUrl && (
+                        <>
+                        <hr className="border-olive-300 my-6  w-96" />
+                        <div className="w-96 h-12 bg-olive-300 flex border rounded-2xl cursor-pointer hover:bg-olive-400">
+                            <div className="flex items-center justify-center w-full h-full text-sm font-semibold">
+                                Save from URL
+                            </div>
                         </div>
-                    </div>
+                        </>
+                    )}
                 </div>
                 <div className="flex flex-col gap-6">
                     <UploadMediaTextInput 
@@ -225,13 +229,14 @@ export default function PinCreationTool(){
                                     className="peer opacity-0 w-0 h-0"
                                     checked={markAsAiModified}
                                     onChange={(e) => setMarkAsAiModified(e.target.checked)} 
+                                    disabled={previewUrl ? false : true}
                                 />
-                                <span className="absolute cursor-pointer inset-0 bg-gray-300 transition-all duration-400 rounded-full
+                                <span className={`absolute ${previewUrl ? "cursor-pointer" : ""} inset-0 bg-gray-300 transition-all duration-400 rounded-full
                                             peer-checked:bg-blue-500
                                             peer-focus:shadow-[0_0_1px_#2196F3]
                                             before:content-[''] before:absolute before:h-6.5 before:w-6.5 before:left-1 before:bottom-1
                                             before:bg-white before:transition-all before:duration-400 before:rounded-full
-                                            peer-checked:before:translate-x-6.5">
+                                            peer-checked:before:translate-x-6.5`}>
                                 </span>
                             </label>
                         </div>
@@ -243,6 +248,7 @@ export default function PinCreationTool(){
                                     type="checkbox"
                                     checked={includesAiPerson}
                                     onChange={(e) => setIncludeAiPerson(e.target.checked)}
+                                    disabled={previewUrl ? false : true}
                                 />
                                 <span className="text-sm">This Pin includes an AI-generated person</span>
                             </div>
@@ -256,13 +262,14 @@ export default function PinCreationTool(){
                                     className="peer opacity-0 w-0 h-0"
                                     checked={allowComments}
                                     onChange={(e) => setAllowComments(e.target.checked)} 
+                                    disabled={previewUrl ? false : true}
                                 />
-                                <span className="absolute cursor-pointer inset-0 bg-gray-300 transition-all duration-400 rounded-full
+                                <span className={`absolute ${previewUrl ? "cursor-pointer" : ""} inset-0 bg-gray-300 transition-all duration-400 rounded-full
                                             peer-checked:bg-blue-500
                                             peer-focus:shadow-[0_0_1px_#2196F3]
                                             before:content-[''] before:absolute before:h-6.5 before:w-6.5 before:left-1 before:bottom-1
                                             before:bg-white before:transition-all before:duration-400 before:rounded-full
-                                            peer-checked:before:translate-x-6.5">
+                                            peer-checked:before:translate-x-6.5`}>
                                 </span>
                             </label>
                         </div>
@@ -278,13 +285,14 @@ export default function PinCreationTool(){
                                     className="peer opacity-0 w-0 h-0"
                                     checked={showSimilarProducts}
                                     onChange={(e) => setShowSimilarProducts(e.target.checked)} 
+                                    disabled={previewUrl ? false : true}
                                 />
-                                <span className="absolute cursor-pointer inset-0 bg-gray-300 transition-all duration-400 rounded-full
+                                <span className={`absolute ${previewUrl ? "cursor-pointer" : ""} inset-0 bg-gray-300 transition-all duration-400 rounded-full
                                             peer-checked:bg-blue-500
                                             peer-focus:shadow-[0_0_1px_#2196F3]
                                             before:content-[''] before:absolute before:h-6.5 before:w-6.5 before:left-1 before:bottom-1
                                             before:bg-white before:transition-all before:duration-400 before:rounded-full
-                                            peer-checked:before:translate-x-6.5">
+                                            peer-checked:before:translate-x-6.5`}>
                                 </span>
                             </label>
                         </div>
@@ -299,7 +307,7 @@ export default function PinCreationTool(){
                             name="can_pin_alt_desc" 
                             placeholder="Describe your Pin's visual details"
                             id="can_pin_alt_desc"
-                            className="peer border-gray-300 border rounded-2xl h-18 w-full px-4 pt-7 pb-1 outline-none text-base transition-all resize-none"
+                            className={`peer border-gray-300 ${previewUrl ? "" : "bg-olive-300"} border rounded-2xl h-18 w-full px-4 pt-7 pb-1 outline-none text-base transition-all resize-none`}
                             value={altText}
                             onChange={(e) => setAltText(e.target.value)}
                             />
