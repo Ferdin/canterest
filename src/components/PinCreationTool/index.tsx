@@ -3,7 +3,7 @@ import UploadMediaTextInput from "../PinCreationToolElements/UploadMediaElements
 import UploadMediaTextArea from "../PinCreationToolElements/UploadMediaElements/UploadMediaTextArea";
 import UploadMediaGenericComboBox,{ type ComboBoxItem } from "../PinCreationToolElements/UploadMediaElements/UploadMediaGenericComboBox";
 import { useState, useRef } from "react";
-import { useCreatePinMutation, useGetMyDraftsQuery, useUpdatePinMutation, useUploadMediaMutation } from "../../features/pins/pinsApi";
+import { useCreatePinMutation, useGetMyDraftsQuery, useUpdatePinMutation, useUploadMediaMutation, type PinOut } from "../../features/pins/pinsApi";
 import Loading from "../MiscAnimatedComponents/Loading";
 
 interface Board extends ComboBoxItem {}
@@ -79,6 +79,30 @@ export default function PinCreationTool(){
         } catch (err: any) {
             setErrorMsg("Failed to upload media. Please try again.");
         }
+    }
+
+    const handleSelectDraft = (draft: PinOut) => {
+        setDraftPinId(draft.id);
+        setPreviewUrl(draft.media_url);
+        setTitle(draft.title ?? "");
+        setDescription(draft.description ?? "");
+        setLink(draft.link ?? "");
+        setAltText(draft.alt_text ?? "");
+        setMarkAsAiModified(draft.mark_as_ai_modified ?? false);
+        setIncludeAiPerson(draft.includes_ai_generated_person ?? false);
+        setAllowComments(draft.allow_comments ?? true);
+        setShowSimilarProducts(draft.show_similar_products ?? true);
+
+        // board/topics need matching against your local `boards` /`topics` lists
+        // since the draft only stores board_id / topic names, not full objects
+        const matchedBoard = boards.find((b) => b.id === draft.board_id) ?? null;
+        setSelectedBoard(matchedBoard);
+
+        const matchedTopics = topics.filter((t) => draft.topics?.includes(t.name));
+        setSelectedTopics(matchedTopics);
+
+        setErrorMsg(null);
+        setSelectPins(false);
     }
 
     const handlePublish = async () => {
@@ -358,7 +382,7 @@ export default function PinCreationTool(){
                 <div className="relative inline-flex items-center justify-center cursor-pointer" onClick={handleSelectPins}>
                     <Folder className="w-12 h-12 " strokeWidth={1.5}/>
                     <span className="absolute top-[55%] left-1/2 -translate-x-1/2 -translate-y-1/2 text-xs font-bold">
-                        ({drafts?.length ?? 0})
+                        {drafts?.length ?? 0}
                     </span>
                 </div>
                 <div className="relative inline-flex items-center justify-center py-4">
@@ -384,6 +408,7 @@ export default function PinCreationTool(){
                     {drafts?.map((draft) => (
                         <div
                             key={draft.id}
+                            onClick={() => handleSelectDraft(draft)}
                             className="flex items-center gap-3 p-2 rounded-lg hover:bg-olive-100 cursor-pointer"
                         >
                             <img

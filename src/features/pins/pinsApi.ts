@@ -21,7 +21,7 @@ interface PinCreate {
     show_similar_products?: boolean;
 }
 
-interface PinOut extends PinCreate {
+export interface PinOut extends PinCreate {
     id: number;
     owner_id: number;
     created_at: string;
