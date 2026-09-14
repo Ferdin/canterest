@@ -5,7 +5,7 @@ interface MainNavWrapperProps {
 }
 export default function MainNavWrapper({ children }: MainNavWrapperProps) {
   return (
-    <div className="px-2 py-4 flex w-full bg-white filter shadow-sm sticky">
+    <div className="px-2 py-4 flex w-full bg-white filter sticky top-0 z-50">
       {children}
     </div>
   );

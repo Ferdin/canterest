@@ -166,9 +166,9 @@ export default function PinCreationTool(){
     return (
     <div className="flex flex-row min-h-screen">
         <div className={`${selectPins ? "w-[80%]" : "w-[95%]"} `}>
-            <div className="flex justify-between items-center px-2 py-4 border-b-olive-300 border-b">
+            <div className="flex justify-between items-center px-2 py-4 border-b-olive-300 border-t-olive-300 border-b border-t sticky top-20 z-10 bg-white">
                 <h2 className="font-bold text-2xl">Create Pin</h2>
-                <button className="bg-red-600 text-white px-4 py-2 hover:bg-red-700 cursor-pointer font-semibold rounded-lg" onClick={handlePublish}>Publish</button>
+                {previewUrl && <button className="bg-red-600 text-white px-4 py-2 hover:bg-red-700 cursor-pointer font-semibold rounded-lg" onClick={handlePublish}>Publish</button>}
             </div>
             {errorMsg && (
                 <div className="px-56 pt-4 text-sm text-red-600">{errorMsg}</div>
@@ -377,7 +377,7 @@ export default function PinCreationTool(){
                 </div>
             </div>
         </div>
-        <div className={`${selectPins ? "w-[20%]" : "w-[5%]"}  border border-olive-300 flex flex-col pt-4`}>
+        <div className={`${selectPins ? "w-[20%]" : "w-[5%]"} h-[calc(100vh-(--spacing(20)))] overflow-y-auto border border-olive-300 flex flex-col pt-4 sticky top-20 bg-white`}>
             {!selectPins  ? (<div className="w-full flex flex-col justify-center">
                 <div className="relative inline-flex items-center justify-center cursor-pointer" onClick={handleSelectPins}>
                     <Folder className="w-12 h-12 " strokeWidth={1.5}/>
