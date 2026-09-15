@@ -59,6 +59,10 @@ export const pinsApi = createApi({
             query: () => "/pins",
             providesTags: ["Pin"],
         }),
+        getPinsByUsername: builder.query<PinOut[], string> ({
+            query: (username) => `/pins?username=${username}`,
+            providesTags: ["Pin"],
+        }),
         // add PATCH mutation + a way to query drafts
         updatePin: builder.mutation<PinOut, { id: number; updates: Partial<PinCreate> }>({
             query: ({ id, updates }) => ({
@@ -80,5 +84,6 @@ export const {
     useCreatePinMutation,
     useUpdatePinMutation, 
     useGetPinsQuery,
-    useGetMyDraftsQuery
+    useGetMyDraftsQuery,
+    useGetPinsByUsernameQuery,
 } = pinsApi;
