@@ -1,5 +1,6 @@
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
-import { logoutAndClearCache } from "../../features/auth/authSlice"
+import { logoutAndClearCache } from "../../features/auth/authSlice";
+import { Link } from "react-router-dom";
 
 export default function AccountOptionsBox() {
     const dispatch = useAppDispatch();
@@ -20,19 +21,26 @@ export default function AccountOptionsBox() {
                        ring-black/5
                        z-50
         ">
-            <div className="px-3 py-2">
+            <div className="w-full rounded-lg px-3 py-2
+                    text-left text-sm font-medium
+                    hover:bg-gray-100
+                    cursor-pointer">
                 <p className="text-xs font-medium text-grey-500">
                     Currently in
                 </p>
-                <p className="mt-1 text-sm font-semibold text-gray-900">
-                    {user?.name ?? "..."}
-                </p>
-                <p className="text-sm text-gray-500">
-                    Personal
-                </p>
-                <p className="text-sm text-gray-500">
-                    {user?.email ?? ""}
-                </p>
+                <Link
+                    to={`/${user?.username}`}
+                >
+                    <p className="mt-1 text-sm font-semibold text-gray-900">
+                        {user?.name ?? "..."}
+                    </p>
+                    <p className="text-sm text-gray-500">
+                        Personal
+                    </p>
+                    <p className="text-sm text-gray-500">
+                        {user?.email ?? ""}
+                    </p>
+                </Link>
             </div>
 
             <div className="my-1 h-px bg-gray-200"/>

@@ -29,7 +29,7 @@ export default function UserProfile() {
                 )}
 
                 {pins && pins.length > 0 && (
-                    <div className="columns-2 sm:columns-3 md:columns-4 gap-4 [column-fill:balance]">
+                    <div className="columns-2 sm:columns-3 md:columns-6 gap-4 [column-fill:balance]">
                         {pins.map((pin) =>(
                             <div key={pin.id} className="mb-4 break-inside-avoid">
                                 <img
