@@ -10,6 +10,7 @@ import { Routes, Route } from "react-router-dom";
 import AppLayout from "./components/AppLayout";
 import PinCreationTool from "./components/PinCreationTool";
 import Board from "./components/Board";
+import UserProfile from "./components/UserProfile";
 
 function App() {
   const dispatch = useAppDispatch();
@@ -43,6 +44,7 @@ function App() {
       <Route path="/" element={token ? <AppLayout/> : <InitialLoginBox/>}>
         <Route index element={<Board/>}/>
         <Route path="pin-creation-tool" element={<PinCreationTool/>} />
+        <Route path=":username" element={<UserProfile/>}/>
       </Route>
     </Routes>
   ) 
