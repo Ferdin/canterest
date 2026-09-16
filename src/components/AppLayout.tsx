@@ -1,12 +1,16 @@
 import { Outlet } from "react-router-dom";
-import { useAppSelector } from "../app/hooks";
+import { useAppDispatch, useAppSelector } from "../app/hooks";
 import ExpandBoard from "./ExpandBoard";
 import MainNav from "./MainNav";
 import MainWrapper from "./MainWrapper";
 import SideNav from "./SideNav";
+import CreateBoardModal from "./CreateBoardModal";
+import { closeCreateBoardModal } from "../features/ui/uiSlice";
 
 export default function AppLayout() {
     const activeMenu = useAppSelector((state) => state.ui.activeMenu);
+    const isCreateBoardOpen = useAppSelector((state) => state.ui.isCreateBoardOpen);
+    const dispatch = useAppDispatch();
 
     return (
         <MainWrapper>
@@ -20,6 +24,11 @@ export default function AppLayout() {
                 <MainNav />
                 <Outlet />
             </div>
+
+            <CreateBoardModal
+                isOpen={isCreateBoardOpen}
+                onClose={() => dispatch(closeCreateBoardModal())}
+            />    
         </MainWrapper>
     )
 }

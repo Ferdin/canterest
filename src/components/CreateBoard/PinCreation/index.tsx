@@ -3,11 +3,14 @@ import CreationWrapper from "../Wrappers/CreationWrapper";
 import CreationIconWrapper from "../Wrappers/CreationIconWrapper";
 import CreationColWrapper from "../Wrappers/CreationColWrapper";
 import { Link } from "react-router-dom";
+import { useAppDispatch } from "../../../app/hooks";
+import { closeMenu } from "../../../features/ui/uiSlice";
 
 export default function PinCreation() {
+  const dispatch = useAppDispatch();
   return (
     <CreationWrapper>
-      <Link to="/pin-creation-tool" className="flex items-center w-full gap-4">
+      <Link to="/pin-creation-tool" className="flex items-center w-full gap-4" onClick={() => dispatch(closeMenu())}>
         <CreationIconWrapper>
           <Pin className="w-16 h-16 px-4" />
         </CreationIconWrapper>

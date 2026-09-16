@@ -10,10 +10,12 @@ export type ActiveMenu =
 
 interface UIState {
   activeMenu: ActiveMenu;
+  isCreateBoardOpen: boolean;
 }
 
 const initialState: UIState = {
   activeMenu: null,
+  isCreateBoardOpen: false,
 };
 
 const uiSlice = createSlice({
@@ -23,13 +25,18 @@ const uiSlice = createSlice({
     setActiveMenu: (state, action: PayloadAction<ActiveMenu>) => {
       state.activeMenu = action.payload;
     },
-
     closeMenu: (state) => {
       state.activeMenu = null;
     },
+    openCreateBoardModal: (state) => {
+      state.isCreateBoardOpen = true;
+    },
+    closeCreateBoardModal: (state) => {
+      state.isCreateBoardOpen = false;
+    }
   },
 });
 
-export const { setActiveMenu, closeMenu } = uiSlice.actions;
+export const { setActiveMenu, closeMenu, openCreateBoardModal, closeCreateBoardModal } = uiSlice.actions;
 
 export default uiSlice.reducer;

@@ -2,10 +2,21 @@ import { WalletCards } from "lucide-react";
 import CreationIconWrapper from "../Wrappers/CreationIconWrapper";
 import CreationWrapper from "../Wrappers/CreationWrapper";
 import CreationColWrapper from "../Wrappers/CreationColWrapper";
+import { useAppDispatch } from "../../../app/hooks";
+import { closeMenu, openCreateBoardModal } from "../../../features/ui/uiSlice";
 
 export default function BoardCreation() {
+  const dispatch = useAppDispatch();
+  
   return (
-    <CreationWrapper>
+    <CreationWrapper 
+      onClick={
+        () => { 
+          dispatch(openCreateBoardModal());
+          dispatch(closeMenu());
+        }
+      }
+    >
       <CreationIconWrapper>
         <WalletCards className="w-16 h-16 px-4" />
       </CreationIconWrapper>
