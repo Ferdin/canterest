@@ -8,7 +8,7 @@ export const boardsApi = createApi({
         baseUrl: "http://localhost:8000",
         prepareHeaders: (headers, { getState }) => {
             const token = (getState() as RootState).auth.token;
-            if (token) headers.set("Authorization", `Bearer $`);
+            if (token) headers.set("Authorization", `Bearer ${token}`);
             return headers;
         },
     }),
