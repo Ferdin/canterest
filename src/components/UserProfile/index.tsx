@@ -2,12 +2,18 @@ import { useParams } from "react-router-dom";
 import { useGetUserByUsernameQuery } from "../../features/users/userApi";
 import Loading from "../MiscAnimatedComponents/Loading";
 import { useGetPinsByUsernameQuery } from "../../features/pins/pinsApi";
+import { useGetBoardsByUsernameQuery } from "../../features/boards/boardsApi";
 
 export default function UserProfile() {
     const { username } = useParams<{ username: string}>();
     const { data: user, isLoading, isError } = useGetUserByUsernameQuery(username!);
     const { data: pins, isLoading: pinsLoading } = useGetPinsByUsernameQuery(username!, {
-        skip: !username,
+            skip: !username,
+    });
+
+    const { data: boards, isLoading: boardsLoading } = useGetBoardsByUsernameQuery(username!, 
+        {
+            skip: !username,
     });
 
     if (isLoading) return <Loading/>
@@ -20,7 +26,11 @@ export default function UserProfile() {
             )}
             <h1 className="text-2xl font-bold mt-4">{user.name}</h1>
             <p className="text-gray-500">@{user.username}</p>
-
+            <div className="flex flex-row gap-4 font-medium mt-4">
+                <span className="cursor-pointer">Pins</span>
+                <span className="cursor-pointer">Boards</span>
+                <span className="cursor-pointer">College</span>
+            </div>
             <div className="w-full px-8 mt-10">
                 {pinsLoading && <Loading/>}
 
@@ -39,6 +49,26 @@ export default function UserProfile() {
                                 />
                                 {pin.title && (
                                     <p className="text-sm font-medium mt-1 px-1">{pin.title}</p>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+            <div className="w-full px-8 mt-10">
+                { boardsLoading && <Loading/> }
+
+                {!boardsLoading && boards?.length === 0 && (
+                    <p className="text-center text-gray-500">No boards yet.</p>
+                )}
+
+                {boards && boards.length > 0 && (
+                    <div className="grid grid-cols-2 sm:grid-cols-6 gap-4">
+                        {boards.map((board) => (
+                            <div key={board.id} className="rounded-2xl bg-gray-100 p-4">
+                                <h3 className="font-semibold">{board.name}</h3>
+                                {board.description && (
+                                    <p className="text-sm text-gray-500">{board.description}</p>
                                 )}
                             </div>
                         ))}

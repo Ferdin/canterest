@@ -26,7 +26,15 @@ export const boardsApi = createApi({
             query: () => "/boards?mine=true",
             providesTags: ["Board"]
         }),
+        getBoardsByUsername: builder.query<Board[], string>({
+            query: (username) => `/boards?username=${username}`,
+            providesTags: ["Board"],
+        })
     }),
 });
 
-export const { useCreateBoardMutation, useGetMyBoardsQuery } = boardsApi;
+export const { 
+    useCreateBoardMutation, 
+    useGetMyBoardsQuery,
+    useGetBoardsByUsernameQuery,
+} = boardsApi;
