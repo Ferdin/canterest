@@ -365,6 +365,7 @@ export default function PinCreationTool(){
                             className={`peer border-gray-300 ${previewUrl ? "" : "bg-olive-300"} border rounded-2xl h-18 w-full px-4 pt-7 pb-1 outline-none text-base transition-all resize-none`}
                             value={altText}
                             onChange={(e) => setAltText(e.target.value)}
+                            disabled={previewUrl ? false : true}
                             />
                         <label
                             htmlFor="can_pin_alt_desc"
