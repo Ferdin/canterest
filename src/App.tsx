@@ -11,6 +11,9 @@ import AppLayout from "./components/AppLayout";
 import PinCreationTool from "./components/PinCreationTool";
 import Board from "./components/Board";
 import UserProfile from "./components/UserProfile";
+import UserProfilePins from "./components/UserProfile/UserProfilePins";
+import UserProfileBoards from "./components/UserProfile/UserProfileBoards";
+import UserProfileCollages from "./components/UserProfile/UserProfileCollages";
 
 function App() {
   const dispatch = useAppDispatch();
@@ -44,7 +47,11 @@ function App() {
       <Route path="/" element={token ? <AppLayout/> : <InitialLoginBox/>}>
         <Route index element={<Board/>}/>
         <Route path="pin-creation-tool" element={<PinCreationTool/>} />
-        <Route path=":username" element={<UserProfile/>}/>
+        <Route path=":username" element={<UserProfile/>}>
+          <Route index element={<UserProfilePins/>}/>
+          <Route path="boards" element={<UserProfileBoards/>}/>
+          <Route path="collages" element={<UserProfileCollages/>}/>
+        </Route>
       </Route>
     </Routes>
   ) 
