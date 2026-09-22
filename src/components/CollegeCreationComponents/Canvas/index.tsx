@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import "./index.css";
 
 export default function Canvas(){
     
@@ -100,6 +101,23 @@ export default function Canvas(){
     const draw = (
         event: React.PointerEvent<HTMLCanvasElement>
     ) => {
+        
+        if (!isDrawing) return;
+
+        const canvas = canvasRef.current;
+
+        if (!canvas) return;
+
+        const context = canvas.getContext("2d");
+
+        if (!context) return;
+
+        const position = getPosition(event);
+
+        if (!position) return;
+
+        context.lineTo(position.x, position.y);
+        context.stroke();
 
     }
 
@@ -107,13 +125,35 @@ export default function Canvas(){
     const stopDrawing = (
         event: React.PointerEvent<HTMLCanvasElement>
     ) => {
+        const canvas = canvasRef.current;
 
-    }
+        if (!canvas) return;
+
+        if (canvas.hasPointerCapture(event.pointerId)) {
+            canvas.releasePointerCapture(event.pointerId);
+        }
+
+        setIsDrawing(false);
+
+    };
 
     // Clear canvas
     const clearCanvas = () => {
+        const canvas = canvasRef.current;
         
-    }
+        if (!canvas) return;
+
+        const context = canvas.getContext("2d");
+
+        if (!context) return;
+
+        context.clearRect(
+            0,
+            0,
+            canvas.width,
+            canvas.height
+        );
+    };
 
     return(
         <div className="drawing-tool">

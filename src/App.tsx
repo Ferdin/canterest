@@ -14,6 +14,7 @@ import UserProfile from "./components/UserProfile";
 import UserProfilePins from "./components/UserProfile/UserProfilePins";
 import UserProfileBoards from "./components/UserProfile/UserProfileBoards";
 import UserProfileCollages from "./components/UserProfile/UserProfileCollages";
+import CollageCreationTool from "./components/CollageCreationTool";
 
 function App() {
   const dispatch = useAppDispatch();
@@ -47,6 +48,7 @@ function App() {
       <Route path="/" element={token ? <AppLayout/> : <InitialLoginBox/>}>
         <Route index element={<Board/>}/>
         <Route path="pin-creation-tool" element={<PinCreationTool/>} />
+        <Route path="collage-creation-tool" element={<CollageCreationTool/>} />
         <Route path=":username" element={<UserProfile/>}>
           <Route index element={<UserProfilePins/>}/>
           <Route path="boards" element={<UserProfileBoards/>}/>
