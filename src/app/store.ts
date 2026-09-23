@@ -6,6 +6,7 @@ import { pinsApi } from "../features/pins/pinsApi";
 import authReducer from "../features/auth/authSlice";
 import { usersApi } from "../features/users/userApi";
 import { boardsApi } from "../features/boards/boardsApi";
+import canvasReducer from "../features/canvas/canvasSlice";
 
 export const store = configureStore({
   reducer: {
@@ -14,6 +15,7 @@ export const store = configureStore({
     [pinsApi.reducerPath]: pinsApi.reducer,
     [usersApi.reducerPath]: usersApi.reducer,
     [boardsApi.reducerPath]: boardsApi.reducer,
+    canvas: canvasReducer,
     ui: uiReducer,
   },
   middleware: (getDefaultMiddleware) => 

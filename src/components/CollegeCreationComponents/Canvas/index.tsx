@@ -1,12 +1,15 @@
 import { useEffect, useRef, useState } from "react";
+import { useAppSelector } from "../../../app/hooks";
 import "./index.css";
 
 export default function Canvas(){
     
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [isDrawing, setIsDrawing] = useState<boolean>(false);
-    const [color, setColor] = useState("#000000");
-    const [brushSize, setBrushSize] = useState<number>(5);
+
+    const color = useAppSelector((state) => state.canvas.color);
+    const brushSize = useAppSelector((state) => state.canvas.brushSize);
+    const clearTrigger = useAppSelector((state) => state.canvas.clearTrigger);
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -51,6 +54,19 @@ export default function Canvas(){
             window.removeEventListener("resize", resizeCanvas);
         }
     }, []);
+
+    useEffect(() => {
+        if (clearTrigger === 0) return;
+
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        const context = canvas.getContext("2d");
+        if (!context) return;
+
+        context.clearRect(0, 0, canvas.width, canvas.height);
+
+    }, [clearTrigger])
 
     // Get mouse/pointer position relative to canvas
     const getPosition = (
@@ -137,55 +153,8 @@ export default function Canvas(){
 
     };
 
-    // Clear canvas
-    const clearCanvas = () => {
-        const canvas = canvasRef.current;
-        
-        if (!canvas) return;
-
-        const context = canvas.getContext("2d");
-
-        if (!context) return;
-
-        context.clearRect(
-            0,
-            0,
-            canvas.width,
-            canvas.height
-        );
-    };
-
     return(
-        <div className="drawing-tool">
-            <div className="toolbar">
-                <label>
-                    Color
-                    <input 
-                        type="color"
-                        value={color}
-                        onChange={(event) => setColor(event.target.value)}
-                    />
-                </label>
-
-                <label>
-                    Brush size
-                    <input
-                        type="range"
-                        min="1"
-                        max="50"
-                        value={brushSize}
-                        onChange={(event) => 
-                            setBrushSize(Number(event.target.value))
-                        }
-                    />
-                </label>
-
-                <span>{brushSize}px</span>
-
-                <button onClick={clearCanvas}>
-                    Clear
-                </button>
-            </div>
+        <div className="w-125 h-187.5 flex flex-col gap-3.5">
             <div className="drawing-area">
                 <canvas
                     ref={canvasRef}
