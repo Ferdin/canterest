@@ -6,7 +6,7 @@ export default function CollageCreationTool(){
     return(
         <div className="flex flex-row">
             <div className="w-[60%] border-r h-screen">
-                <div className="flex flex-row justify-between px-2">
+                <div className="flex flex-row justify-between px-4 mt-4">
                     <div className="flex flex-row items-center justify-center gap-4">
                         <X className="w-12 h-12"/>
                         <span className="text-lg font-bold">Create Collage</span>
@@ -15,17 +15,17 @@ export default function CollageCreationTool(){
                         <Undo2/>
                         <Redo2/>
                         <Ellipsis/>
-                        <button className="bg-red-600 px-4 py-4 rounded-xl text-white font-medium">Next</button>
+                        <button className="bg-red-600 px-4 py-4 rounded-xl text-white font-medium cursor-pointer hover:bg-red-700">Next</button>
                     </div>
                 </div>
                 <div className="flex flex-row mt-4">
-                    <div className="w-[40%]">
-                        <div className="w-full px-2">
+                    <div className="w-[30%]">
+                        <div className="w-full px-6">
                             <span className="font-semibold">Cutouts</span>
                             <p className="mt-2">Select a cutout to edit or drag to reorder</p>
                         </div>
                     </div>
-                    <div className="w-[60%] flex flex-col">
+                    <div className="w-[70%] flex flex-col">
                         <div className="w-full flex justify-center">
                             <Canvas/>
                         </div>
