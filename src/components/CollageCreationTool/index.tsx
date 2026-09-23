@@ -1,11 +1,11 @@
 import { Ellipsis, Image, LineSquiggle, Redo2, Type, Undo2, X } from "lucide-react";
-import Canvas from "../CollegeCreationComponents/Canvas";
-import CanvasComponents from "../CollegeCreationComponents/CanvasComponents";
+import Canvas from "../CollageCreationComponents/Canvas";
+import CanvasComponents from "../CollageCreationComponents/CanvasComponents";
 
 export default function CollageCreationTool(){
     return(
         <div className="flex flex-row">
-            <div className="w-[60%] border-r h-screen">
+            <div className="w-[60%] border-r border-r-olive-300 h-screen">
                 <div className="flex flex-row justify-between px-4 mt-4">
                     <div className="flex flex-row items-center justify-center gap-4">
                         <X className="w-12 h-12"/>
@@ -20,9 +20,10 @@ export default function CollageCreationTool(){
                 </div>
                 <div className="flex flex-row mt-4">
                     <div className="w-[30%]">
-                        <div className="w-full px-6">
+                        <div className="w-full px-6 flex flex-col gap-1">
                             <span className="font-semibold">Cutouts</span>
-                            <p className="mt-2">Select a cutout to edit or drag to reorder</p>
+                            <p className="">Select a cutout to edit or drag to reorder</p>
+                            <div className="w-58 h-[calc(100vh-200px)] rounded-xl mt-1 overflow-scroll"></div>
                         </div>
                     </div>
                     <div className="w-[70%] flex flex-col">
