@@ -38,7 +38,7 @@ export default function CollageCreationTool(){
                     </div>
                 </div>
             </div>
-            <div className="w-[40%]">
+            <div className="w-[40%] px-6 mt-4">
                 <CanvasComponents/>
             </div>
         </div>
