@@ -1,1 +1,84 @@
 @import "tailwindcss";
+
+.pin-range {
+    -webkit-appearance: none;
+    appearance: none;
+    flex: 1;
+    height: 20px;
+    background: transparent;
+    cursor: pointer;
+}
+
+.pin-range:focus {
+    outline: none;
+}
+
+/* Track: dark up to the thumb, light gray after */
+.pin-range::-webkit-slider-runnable-track {
+    height: 4px;
+    border-radius: 999px;
+    background: linear-gradient(
+        to right,
+        #111111 0%,
+        #111111 var(--fill),
+        #e9e9e9 var(--fill),
+        #e9e9e9 100%
+    );
+}
+
+.pin-range::-moz-range-track {
+    height: 4px;
+    border-radius: 999px;
+    background: #e9e9e9;
+}
+
+.pin-range::-moz-range-progress {
+    height: 4px;
+    border-radius: 999px;
+    background: #111111;
+}
+
+/* Thumb: white circle with a soft shadow */
+.pin-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    margin-top: -8px; /* centers the thumb on the 4px track */
+    border-radius: 50%;
+    background: #ffffff;
+    border: none;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.pin-range::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #ffffff;
+    border: none;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.pin-range:hover::-webkit-slider-thumb,
+.pin-range:active::-webkit-slider-thumb {
+    transform: scale(1.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+.pin-range:hover::-moz-range-thumb,
+.pin-range:active::-moz-range-thumb {
+    transform: scale(1.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+/* Keyboard focus ring */
+.pin-range:focus-visible::-webkit-slider-thumb {
+    box-shadow: 0 0 0 3px rgba(0, 132, 255, 0.5);
+}
+
+.pin-range:focus-visible::-moz-range-thumb {
+    box-shadow: 0 0 0 3px rgba(0, 132, 255, 0.5);
+}

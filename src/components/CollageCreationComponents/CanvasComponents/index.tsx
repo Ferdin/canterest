@@ -8,6 +8,7 @@ import {
     setOpacity,
     type BrushStyle, 
 } from "../../../features/canvas/canvasSlice";
+import RangeSlider from "./RangeSlider.tsx";
 
 const BRUSHES: { id: BrushStyle; label: string; Icon: typeof Pencil }[] = [
     { id: "eraser", label: "Eraser", Icon: Eraser },
@@ -31,8 +32,8 @@ export default function CanvasComponents() {
                 <X/>
             </div>
 
-            <div className="flex flex-row justify-between">
-                <span>Style</span>
+            <div className="flex flex-row justify-between items-center">
+                <span className="font-semibold">Style</span>
                 <div className="flex flex-row gap-6">
                     {BRUSHES.map(({ id, label, Icon }) => (
                         <div className="relative group inline-block">
@@ -54,6 +55,7 @@ export default function CanvasComponents() {
                                             hidden group-hover:block
                                             whitespace-nowrap rounded bg-gray-800 px-2 py-1
                                             text-sm text-white"
+                                 key={id}           
                             >
                                 {label}
                             </div>    
@@ -63,7 +65,7 @@ export default function CanvasComponents() {
             </div>
 
             <div className="flex flex-row justify-between">
-                <span>Color</span>
+                <span className="font-semibold">Color</span>
                 {/* <input 
                     type="color"
                     value={color}
@@ -84,50 +86,30 @@ export default function CanvasComponents() {
                 </div>
             </div>
             <div className="flex flex-row justify-between">
-                <span>Size</span>
-                <input
-                    type="range"
-                    min="1"
-                    max="50"
+                <span className="font-semibold">Size</span>
+                <RangeSlider
+                    label="Brush size"
+                    min={1}
+                    max={50}
                     value={brushSize}
-                    onChange={(event) => 
-                        dispatch(setBrushSize(Number(event.target.value)))
-                    }
-                    className="
-                        h-2 w-full cursor-pointer appearance-none rounded-lg bg-gray-200
-
-                        [&::-webkit-slider-thumb]:appearance-none
-                        [&::-webkit-slider-thumb]:h-4
-                        [&::-webkit-slider-thumb]:w-4
-                        [&::-webkit-slider-thumb]:cursor-pointer
-                        [&::-webkit-slider-thumb]:rounded-full
-                        [&::-webkit-slider-thumb]:bg-blue-600
-
-                        [&::-moz-range-thumb]:h-4
-                        [&::-moz-range-thumb]:w-4
-                        [&::-moz-range-thumb]:cursor-pointer
-                        [&::-moz-range-thumb]:rounded-full
-                        [&::-moz-range-thumb]:border-0
-                        [&::-moz-range-thumb]:bg-blue-600
-                    "
+                    onChange={(v) => dispatch(setBrushSize(v))}
                 />
             </div>
             <div className="flex flex-row justify-between items-center">
-                <span>Opacity</span>
+                <span className="font-semibold">Opacity</span>
                 <div className="flex items-center gap-2">
-                <input
-                    type="range"
-                    min="0"
-                    max="100"
+                <RangeSlider
+                    label="Opacity"
+                    min={0}
+                    max={100}
                     value={Math.round(opacity * 100)}
-                    onChange={(event) =>
-                    dispatch(setOpacity(Number(event.target.value) / 100))
-                    }
+                    onChange={(v) => dispatch(setOpacity(v / 100))}
+                    formatValue={(v) => `${v}%`}
                 />
                 </div>
             </div>
             <div className="flex flex-row justify-between">
-                <span>Clear</span>
+                <span className="font-semibold">Clear</span>
                 <button onClick={() => dispatch(triggerClear())}>
                     Clear
                 </button>
