@@ -1,8 +1,16 @@
 import { Ellipsis, Image, LineSquiggle, Redo2, Type, Undo2, X } from "lucide-react";
 import Canvas from "../CollageCreationComponents/Canvas";
 import CanvasComponents from "../CollageCreationComponents/CanvasComponents";
+import { useAppDispatch, useAppSelector } from "../../app/hooks";
+import { triggerUndo, triggerRedo } from "../../features/canvas/canvasSlice";
 
 export default function CollageCreationTool(){
+
+    const canUndo = useAppSelector((state) => state.canvas.canUndo);
+    const canRedo = useAppSelector((state) => state.canvas.canRedo);
+
+    const dispatch = useAppDispatch();
+
     return(
         <div className="flex flex-row">
             <div className="w-[60%] border-r border-r-olive-300 h-screen">
@@ -12,8 +20,20 @@ export default function CollageCreationTool(){
                         <span className="text-lg font-bold">Create Collage</span>
                     </div>
                     <div className="flex flex-row items-center gap-4">
-                        <Undo2/>
-                        <Redo2/>
+                        <button
+                            type="button"
+                            disabled={!canUndo}
+                            className="rounded-full p-2 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent"
+                        >
+                            <Undo2 onClick={() => dispatch(triggerUndo())}/>
+                        </button>
+                        <button
+                            type="button"
+                            disabled={!canRedo}
+                            className="rounded-full p-2 hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent"
+                        >
+                            <Redo2 onClick={() => dispatch(triggerRedo())}/>
+                        </button>
                         <Ellipsis/>
                         <button className="bg-red-600 px-4 py-4 rounded-xl text-white font-medium cursor-pointer hover:bg-red-700">Next</button>
                     </div>

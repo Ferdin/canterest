@@ -1,10 +1,20 @@
 import { useEffect, useRef } from "react";
-import { useAppSelector } from "../../../app/hooks";
+import { useAppSelector, useAppDispatch } from "../../../app/hooks";
+import { setHistoryState, triggerUndo, triggerRedo } from "../../../features/canvas/canvasSlice";
 import "./index.css";
 
 type Point = { x: number; y: number };
 
 export default function Canvas() {
+    const MAX_HISTORY = 30;
+
+    const dispatch = useAppDispatch();
+    const historyRef = useRef<HTMLCanvasElement[]>([]);
+    const historyIndexRef = useRef(-1);
+
+    const undoTrigger = useAppSelector((state) => state.canvas.undoTrigger);
+    const redoTrigger = useAppSelector((state) => state.canvas.redoTrigger);
+
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const overlayRef = useRef<HTMLCanvasElement>(null);
     const isDrawingRef = useRef(false);
@@ -15,6 +25,60 @@ export default function Canvas() {
     const brushStyle = useAppSelector((state) => state.canvas.brushStyle);
     const opacity = useAppSelector((state) => state.canvas.opacity);
     const clearTrigger = useAppSelector((state) => state.canvas.clearTrigger);
+
+    const syncHistoryState = () => {
+        dispatch(setHistoryState({
+            canUndo: historyIndexRef.current > 0,
+            canRedo: historyIndexRef.current < historyRef.current.length - 1,
+        }))
+    }
+
+    const saveSnapshot = () => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        const snapshot = document.createElement("canvas");
+        snapshot.width = canvas.width;
+        snapshot.height = canvas.height;
+        snapshot.getContext("2d")?.drawImage(canvas, 0, 0);
+
+        // Drawing after an undo discards the redo branch.
+        const history = historyRef.current.slice(0, historyIndexRef.current + 1);
+        history.push(snapshot);
+        if (history.length > MAX_HISTORY) history.shift();
+
+        historyRef.current = history;
+        historyIndexRef.current = history.length - 1;
+        syncHistoryState();
+    };
+
+    const restoreSnapshot = (index: number) => {
+        const ctxs = getContexts();
+        const snapshot = historyRef.current[index];
+        if (!ctxs || !snapshot) return;
+
+        const { canvas, main } = ctxs;
+        main.clearRect(0, 0, canvas.width, canvas.height);
+
+        main.drawImage(
+            snapshot,
+            0, 0, snapshot.width, snapshot.height,
+            0, 0, canvas.width, canvas.height
+        );
+
+        historyIndexRef.current = index;
+        syncHistoryState();
+    }
+
+    const undo = () => {
+        if (isDrawingRef.current || historyIndexRef.current <= 0) return;
+        restoreSnapshot(historyIndexRef.current - 1);
+    }
+
+    const redo = () => {
+        if (isDrawingRef.current || historyIndexRef.current >= historyRef.current.length - 1) return;
+        restoreSnapshot(historyIndexRef.current + 1);
+    };
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -54,6 +118,8 @@ export default function Canvas() {
         };
 
         resizeCanvas();
+
+        if (historyRef.current.length === 0) saveSnapshot();
         window.addEventListener("resize", resizeCanvas);
         return () => window.removeEventListener("resize", resizeCanvas);
     }, []);
@@ -65,7 +131,43 @@ export default function Canvas() {
 
         ctxs.main.clearRect(0, 0, ctxs.canvas.width, ctxs.canvas.height);
         ctxs.layer.clearRect(0, 0, ctxs.overlay.width, ctxs.overlay.height);
+        saveSnapshot();
     }, [clearTrigger]);
+
+    useEffect(() => {
+        if (undoTrigger === 0) return;
+        undo();
+    }, [undoTrigger]);
+
+    useEffect(() => {
+        if (redoTrigger === 0) return;
+        redo();
+    }, [redoTrigger]);
+
+    useEffect(() => {
+        const onKeyDown = (event: KeyboardEvent) => {
+            // Leave text fields alone so their own undo still works.
+            const target = event.target;
+            if (
+                target instanceof HTMLElement &&
+                target.matches("textarea, [contenteditable='true'], input[type='text'], input[type='search'], input[type='number']")
+            ) return;
+
+            if (!(event.metaKey || event.ctrlKey)) return;
+            const key = event.key.toLowerCase();
+
+            if (key === "z" && !event.ctrlKey) {
+                event.preventDefault();
+                dispatch(triggerUndo());
+            } else if ((key === "z" && event.shiftKey) || key === "y") {
+                event.preventDefault();
+                dispatch(triggerRedo());
+            }
+        };
+
+        window.addEventListener("keydown", onKeyDown);
+        return () => window.removeEventListener("keydown", onKeyDown);
+    }, [dispatch]);
 
     // ---------- helpers ----------
 
@@ -231,6 +333,7 @@ export default function Canvas() {
             ctxs.layer.clearRect(0, 0, ctxs.overlay.width, ctxs.overlay.height);
         }
         pointsRef.current = [];
+        saveSnapshot();
     };
 
     return (

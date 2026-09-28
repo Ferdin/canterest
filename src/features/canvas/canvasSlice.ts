@@ -8,6 +8,10 @@ interface CanvasState {
     clearTrigger: number; // incremented to signal "clear now" — Canvas.tsx watches this
     brushStyle: BrushStyle;
     opacity: number;
+    undoTrigger: number;
+    redoTrigger: number;
+    canUndo: boolean;
+    canRedo: boolean;
 }
 
 const initialState: CanvasState = {
@@ -15,7 +19,11 @@ const initialState: CanvasState = {
     brushSize: 5,
     clearTrigger: 0,
     brushStyle: "pencil",
-    opacity: 1
+    opacity: 1,
+    undoTrigger: 0,
+    redoTrigger: 0,
+    canUndo: false,
+    canRedo: false,
 }
 
 const canvasSlice = createSlice({
@@ -36,9 +44,19 @@ const canvasSlice = createSlice({
         },
         setOpacity: (state, action: PayloadAction<number>) => {
             state.opacity = action.payload;
+        },
+        triggerUndo(state) {
+            state.undoTrigger += 1;
+        },
+        triggerRedo(state) {
+            state.redoTrigger += 1;
+        },
+        setHistoryState(state, action: PayloadAction<{ canUndo: boolean; canRedo: boolean }>) {
+            state.canUndo = action.payload.canUndo;
+            state.canRedo = action.payload.canRedo;
         }
     },
 });
 
-export const { setColor, setBrushSize, triggerClear, setBrushStyle, setOpacity } = canvasSlice.actions;
+export const { setColor, setBrushSize, triggerClear, setBrushStyle, setOpacity, triggerRedo, triggerUndo, setHistoryState } = canvasSlice.actions;
 export default canvasSlice.reducer;
