@@ -1,137 +1,219 @@
 import { useEffect, useRef } from "react";
-import { useAppSelector, useAppDispatch } from "../../../app/hooks";
-import { setHistoryState, triggerUndo, triggerRedo } from "../../../features/canvas/canvasSlice";
+import { useAppDispatch, useAppSelector } from "../../../app/hooks";
+import { setHistoryState, triggerUndo, triggerRedo, setLayers, setActiveLayer, type LayerInfo } from "../../../features/canvas/canvasSlice";
 import "./index.css";
 
 type Point = { x: number; y: number };
+type LayerChange = {
+    layerId: number;
+    before: HTMLCanvasElement | null; // null = layer didn't exist yet
+    after: HTMLCanvasElement | null;  // null = layer was removed
+};
+type HistoryEntry = LayerChange[];
+
+const MAX_HISTORY = 30;
+const THUMB_WIDTH = 96;
+
+const copyCanvas = (source: HTMLCanvasElement) => {
+    const copy = document.createElement("canvas");
+    copy.width = source.width;
+    copy.height = source.height;
+    copy.getContext("2d")?.drawImage(source, 0, 0);
+    return copy;
+};
+
+const makeThumbnail = (layer: HTMLCanvasElement) => {
+    if (layer.width === 0 || layer.height === 0) return "";
+    const thumb = document.createElement("canvas");
+    thumb.width = THUMB_WIDTH;
+    thumb.height = Math.max(1, Math.round(layer.height * (THUMB_WIDTH / layer.width)));
+    thumb.getContext("2d")?.drawImage(layer, 0, 0, thumb.width, thumb.height);
+    return thumb.toDataURL("image/png");
+};
 
 export default function Canvas() {
-    const MAX_HISTORY = 30;
-
     const dispatch = useAppDispatch();
-    const historyRef = useRef<HTMLCanvasElement[]>([]);
-    const historyIndexRef = useRef(-1);
 
-    const undoTrigger = useAppSelector((state) => state.canvas.undoTrigger);
-    const redoTrigger = useAppSelector((state) => state.canvas.redoTrigger);
-
-    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const areaRef = useRef<HTMLDivElement>(null);
+    const layersRef = useRef<HTMLDivElement>(null);
     const overlayRef = useRef<HTMLCanvasElement>(null);
+
+    const layerMapRef = useRef(new Map<number, HTMLCanvasElement>());
+    const activeLayerIdRef = useRef<number | null>(null);
+    const nextLayerIdRef = useRef(1);
+
     const isDrawingRef = useRef(false);
     const pointsRef = useRef<Point[]>([]);
+    const pendingBeforeRef = useRef(new Map<number, HTMLCanvasElement | null>());
+
+    const historyRef = useRef<HistoryEntry[]>([]);
+    const historyIndexRef = useRef(0); // number of entries currently applied
 
     const color = useAppSelector((state) => state.canvas.color);
     const brushSize = useAppSelector((state) => state.canvas.brushSize);
     const brushStyle = useAppSelector((state) => state.canvas.brushStyle);
     const opacity = useAppSelector((state) => state.canvas.opacity);
     const clearTrigger = useAppSelector((state) => state.canvas.clearTrigger);
+    const undoTrigger = useAppSelector((state) => state.canvas.undoTrigger);
+    const redoTrigger = useAppSelector((state) => state.canvas.redoTrigger);
+
+    const activeLayerId = useAppSelector((state) => state.canvas.activeLayerId);
+
+    useEffect(() => {
+        activeLayerIdRef.current = activeLayerId;
+    }, [activeLayerId]);
+
+    // Updates the ref immediately (a stroke may be starting) and tells Redux.
+    const setActive = (id: number | null) => {
+        activeLayerIdRef.current = id;
+        dispatch(setActiveLayer(id));
+    }
+
+    const syncLayers = () => {
+        const layers: LayerInfo[] = [...layerMapRef.current.entries()]
+            .sort((a, b) => a[0] - b[0])
+            .map(([id, canvas], index) => ({
+                id,
+                name: `Layer ${index + 1}`,
+                thumbnail: makeThumbnail(canvas),
+            }));
+        dispatch(setLayers(layers));
+    };
+
+    // ---------- layers ----------
+
+    const createLayer = (id: number) => {
+        const container = layersRef.current;
+        if (!container) return null;
+
+        const rect = container.getBoundingClientRect();
+        const layer = document.createElement("canvas");
+        layer.width = rect.width;
+        layer.height = rect.height;
+        layer.dataset.layerId = String(id);
+        layer.style.cssText =
+            "position:absolute;inset:0;width:100%;height:100%;pointer-events:none;";
+
+        // Keep DOM order matching id order so newer layers sit on top,
+        // including when redo recreates an older layer.
+        const nextSibling = [...layerMapRef.current.entries()]
+            .filter(([otherId]) => otherId > id)
+            .sort((a, b) => a[0] - b[0])[0]?.[1];
+
+        container.insertBefore(layer, nextSibling ?? null);
+        layerMapRef.current.set(id, layer);
+        return layer;
+    };
+
+    const removeLayer = (id: number) => {
+        layerMapRef.current.get(id)?.remove();
+        layerMapRef.current.delete(id);
+        if (activeLayerIdRef.current === id) setActive(null);
+    };
+
+    const applyLayerState = (id: number, snapshot: HTMLCanvasElement | null) => {
+        if (!snapshot) {
+            removeLayer(id);
+            return;
+        }
+
+        const layer = layerMapRef.current.get(id) ?? createLayer(id);
+        const ctx = layer?.getContext("2d");
+        if (!layer || !ctx) return;
+
+        ctx.clearRect(0, 0, layer.width, layer.height);
+        ctx.drawImage(
+            snapshot,
+            0, 0, snapshot.width, snapshot.height,
+            0, 0, layer.width, layer.height
+        );
+    };
+
+    // ---------- history ----------
 
     const syncHistoryState = () => {
         dispatch(setHistoryState({
             canUndo: historyIndexRef.current > 0,
-            canRedo: historyIndexRef.current < historyRef.current.length - 1,
-        }))
-    }
+            canRedo: historyIndexRef.current < historyRef.current.length,
+        }));
+    };
 
-    const saveSnapshot = () => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
+    const pushHistory = (entry: HistoryEntry) => {
+        if (entry.length === 0) return;
 
-        const snapshot = document.createElement("canvas");
-        snapshot.width = canvas.width;
-        snapshot.height = canvas.height;
-        snapshot.getContext("2d")?.drawImage(canvas, 0, 0);
-
-        // Drawing after an undo discards the redo branch.
-        const history = historyRef.current.slice(0, historyIndexRef.current + 1);
-        history.push(snapshot);
+        const history = historyRef.current.slice(0, historyIndexRef.current);
+        history.push(entry);
         if (history.length > MAX_HISTORY) history.shift();
 
         historyRef.current = history;
-        historyIndexRef.current = history.length - 1;
+        historyIndexRef.current = history.length;
         syncHistoryState();
+        syncLayers();
     };
-
-    const restoreSnapshot = (index: number) => {
-        const ctxs = getContexts();
-        const snapshot = historyRef.current[index];
-        if (!ctxs || !snapshot) return;
-
-        const { canvas, main } = ctxs;
-        main.clearRect(0, 0, canvas.width, canvas.height);
-
-        main.drawImage(
-            snapshot,
-            0, 0, snapshot.width, snapshot.height,
-            0, 0, canvas.width, canvas.height
-        );
-
-        historyIndexRef.current = index;
-        syncHistoryState();
-    }
 
     const undo = () => {
-        if (isDrawingRef.current || historyIndexRef.current <= 0) return;
-        restoreSnapshot(historyIndexRef.current - 1);
-    }
-
-    const redo = () => {
-        if (isDrawingRef.current || historyIndexRef.current >= historyRef.current.length - 1) return;
-        restoreSnapshot(historyIndexRef.current + 1);
+        if (isDrawingRef.current || historyIndexRef.current === 0) return;
+        const entry = historyRef.current[historyIndexRef.current - 1];
+        entry.forEach((change) => applyLayerState(change.layerId, change.before));
+        historyIndexRef.current -= 1;
+        syncHistoryState();
+        syncLayers();
     };
 
+    const redo = () => {
+        if (isDrawingRef.current || historyIndexRef.current >= historyRef.current.length) return;
+        const entry = historyRef.current[historyIndexRef.current];
+        entry.forEach((change) => applyLayerState(change.layerId, change.after));
+        historyIndexRef.current += 1;
+        syncHistoryState();
+        syncLayers();
+    };
+
+    // ---------- effects ----------
+
     useEffect(() => {
-        const canvas = canvasRef.current;
+        const area = areaRef.current;
         const overlay = overlayRef.current;
-        if (!canvas || !overlay) return;
+        if (!area || !overlay) return;
 
         const resizeCanvas = () => {
-            const rect = canvas.getBoundingClientRect();
+            const { width, height } = area.getBoundingClientRect();
 
-            // Preserve the existing drawing when resizing.
-            const oldCanvas = document.createElement("canvas");
-            oldCanvas.width = canvas.width;
-            oldCanvas.height = canvas.height;
+            // Preserve each layer's drawing when resizing.
+            layerMapRef.current.forEach((layer) => {
+                const old = copyCanvas(layer);
+                layer.width = width;
+                layer.height = height;
+                layer.getContext("2d")?.drawImage(
+                    old,
+                    0, 0, old.width, old.height,
+                    0, 0, layer.width, layer.height
+                );
+            });
 
-            const oldContext = oldCanvas.getContext("2d");
-            const context = canvas.getContext("2d");
-            if (!oldContext || !context) return;
-
-            oldContext.drawImage(canvas, 0, 0);
-
-            canvas.width = rect.width;
-            canvas.height = rect.height;
-
-            context.drawImage(
-                oldCanvas,
-                0, 0, oldCanvas.width, oldCanvas.height,
-                0, 0, canvas.width, canvas.height
-            );
-
-            // Keep the overlay exactly on top of the main canvas.
-            overlay.width = rect.width;
-            overlay.height = rect.height;
-            overlay.style.width = `${rect.width}px`;
-            overlay.style.height = `${rect.height}px`;
-            overlay.style.left = `${canvas.offsetLeft}px`;
-            overlay.style.top = `${canvas.offsetTop}px`;
+            overlay.width = width;
+            overlay.height = height;
         };
 
         resizeCanvas();
-
-        if (historyRef.current.length === 0) saveSnapshot();
         window.addEventListener("resize", resizeCanvas);
         return () => window.removeEventListener("resize", resizeCanvas);
     }, []);
 
     useEffect(() => {
         if (clearTrigger === 0) return;
-        const ctxs = getContexts();
-        if (!ctxs) return;
 
-        ctxs.main.clearRect(0, 0, ctxs.canvas.width, ctxs.canvas.height);
-        ctxs.layer.clearRect(0, 0, ctxs.overlay.width, ctxs.overlay.height);
-        saveSnapshot();
+        const changes: HistoryEntry = [...layerMapRef.current].map(([layerId, layer]) => ({
+            layerId,
+            before: copyCanvas(layer),
+            after: null,
+        }));
+        changes.forEach((change) => removeLayer(change.layerId));
+
+        const overlay = overlayRef.current;
+        overlay?.getContext("2d")?.clearRect(0, 0, overlay.width, overlay.height);
+
+        pushHistory(changes);
     }, [clearTrigger]);
 
     useEffect(() => {
@@ -144,9 +226,22 @@ export default function Canvas() {
         redo();
     }, [redoTrigger]);
 
+    // Clicking outside the drawing area (and outside the toolbar) ends the current layer.
+    useEffect(() => {
+        const onPointerDown = (event: PointerEvent) => {
+            const target = event.target;
+            if (!(target instanceof Element)) return;
+            if (areaRef.current?.contains(target)) return;
+            if (target.closest("[data-drawing-tools]")) return;
+            setActive(null);
+        };
+
+        document.addEventListener("pointerdown", onPointerDown);
+        return () => document.removeEventListener("pointerdown", onPointerDown);
+    }, []);
+
     useEffect(() => {
         const onKeyDown = (event: KeyboardEvent) => {
-            // Leave text fields alone so their own undo still works.
             const target = event.target;
             if (
                 target instanceof HTMLElement &&
@@ -156,7 +251,7 @@ export default function Canvas() {
             if (!(event.metaKey || event.ctrlKey)) return;
             const key = event.key.toLowerCase();
 
-            if (key === "z" && !event.ctrlKey) {
+            if (key === "z" && !event.shiftKey) {
                 event.preventDefault();
                 dispatch(triggerUndo());
             } else if ((key === "z" && event.shiftKey) || key === "y") {
@@ -169,21 +264,12 @@ export default function Canvas() {
         return () => window.removeEventListener("keydown", onKeyDown);
     }, [dispatch]);
 
-    // ---------- helpers ----------
-
-    const getContexts = () => {
-        const canvas = canvasRef.current;
-        const overlay = overlayRef.current;
-        const main = canvas?.getContext("2d");
-        const layer = overlay?.getContext("2d");
-        if (!canvas || !overlay || !main || !layer) return null;
-        return { canvas, overlay, main, layer };
-    };
+    // ---------- brush helpers ----------
 
     const getPosition = (event: React.PointerEvent<HTMLCanvasElement>): Point | null => {
-        const canvas = canvasRef.current;
-        if (!canvas) return null;
-        const rect = canvas.getBoundingClientRect();
+        const overlay = overlayRef.current;
+        if (!overlay) return null;
+        const rect = overlay.getBoundingClientRect();
         return { x: event.clientX - rect.left, y: event.clientY - rect.top };
     };
 
@@ -195,7 +281,6 @@ export default function Canvas() {
         ctx.lineJoin = "round";
     };
 
-    // Draws a line segment; nudges zero-length segments so a single click leaves a dot.
     const segment = (ctx: CanvasRenderingContext2D, from: Point, to: Point) => {
         ctx.beginPath();
         ctx.moveTo(from.x, from.y);
@@ -216,12 +301,11 @@ export default function Canvas() {
         const dot = Math.max(1, brushSize / 15);
         for (let i = 0; i < density; i++) {
             const angle = Math.random() * Math.PI * 2;
-            const r = brushSize * Math.sqrt(Math.random()); // even spread across the circle
+            const r = brushSize * Math.sqrt(Math.random());
             ctx.fillRect(p.x + Math.cos(angle) * r, p.y + Math.sin(angle) * r, dot, dot);
         }
     };
 
-    // Fills the gap between pointer events so fast strokes don't leave gaps.
     const sprayAlong = (ctx: CanvasRenderingContext2D, from: Point, to: Point) => {
         const dist = Math.hypot(to.x - from.x, to.y - from.y);
         const steps = Math.max(1, Math.ceil(dist / (brushSize / 2)));
@@ -243,61 +327,83 @@ export default function Canvas() {
     };
 
     const render = (from: Point, to: Point) => {
-        const ctxs = getContexts();
-        if (!ctxs) return;
-        const { main, layer, overlay } = ctxs;
+        const overlay = overlayRef.current;
+        const preview = overlay?.getContext("2d");
+        if (!overlay || !preview) return;
 
         if (brushStyle === "eraser") {
-            // Erases straight from the main canvas.
-            main.save();
-            main.globalCompositeOperation = "destination-out";
-            applyBase(main);
-            segment(main, from, to);
-            main.restore();
+            // Erase through every layer under the pointer.
+            layerMapRef.current.forEach((layer) => {
+                const ctx = layer.getContext("2d");
+                if (!ctx) return;
+                ctx.save();
+                ctx.globalCompositeOperation = "destination-out";
+                applyBase(ctx);
+                segment(ctx, from, to);
+                ctx.restore();
+            });
             return;
         }
 
-        layer.save();
-        applyBase(layer);
+        preview.save();
+        applyBase(preview);
 
         switch (brushStyle) {
             case "pencil":
-                layer.clearRect(0, 0, overlay.width, overlay.height);
-                strokePath(layer, pointsRef.current);
+                preview.clearRect(0, 0, overlay.width, overlay.height);
+                strokePath(preview, pointsRef.current);
                 break;
 
             case "glow":
-                layer.clearRect(0, 0, overlay.width, overlay.height);
-                layer.shadowBlur = brushSize * 2;
-                layer.shadowColor = color;
-                strokePath(layer, pointsRef.current);
-                // Bright core for a neon look.
-                layer.shadowBlur = 0;
-                layer.lineWidth = Math.max(1, brushSize * 0.35);
-                layer.strokeStyle = "rgba(255, 255, 255, 0.85)";
-                strokePath(layer, pointsRef.current);
+                preview.clearRect(0, 0, overlay.width, overlay.height);
+                preview.shadowBlur = brushSize * 2;
+                preview.shadowColor = color;
+                strokePath(preview, pointsRef.current);
+                preview.shadowBlur = 0;
+                preview.lineWidth = Math.max(1, brushSize * 0.35);
+                preview.strokeStyle = "rgba(255, 255, 255, 0.85)";
+                strokePath(preview, pointsRef.current);
                 break;
 
             case "spray":
-                sprayAlong(layer, from, to);
+                sprayAlong(preview, from, to);
                 break;
 
             case "crayon":
-                crayonSegment(layer, from, to);
+                crayonSegment(preview, from, to);
                 break;
         }
 
-        layer.restore();
+        preview.restore();
     };
 
     // ---------- pointer handlers ----------
 
     const startDrawing = (event: React.PointerEvent<HTMLCanvasElement>) => {
-        const canvas = canvasRef.current;
+        const overlay = overlayRef.current;
         const position = getPosition(event);
-        if (!canvas || !position) return;
+        if (!overlay || !position) return;
 
-        canvas.setPointerCapture(event.pointerId);
+        const before = new Map<number, HTMLCanvasElement | null>();
+
+        if (brushStyle === "eraser") {
+            layerMapRef.current.forEach((layer, id) => before.set(id, copyCanvas(layer)));
+        } else {
+            const activeId = activeLayerIdRef.current;
+            const active = activeId !== null ? layerMapRef.current.get(activeId) : undefined;
+
+            if (activeId !== null && active) {
+                before.set(activeId, copyCanvas(active));
+            } else {
+                // No active layer: this stroke starts a new one.
+                const id = nextLayerIdRef.current++;
+                setActive(id);
+                before.set(id, null);
+            }
+        }
+
+        pendingBeforeRef.current = before;
+        overlay.setPointerCapture(event.pointerId);
         isDrawingRef.current = true;
         pointsRef.current = [position];
         render(position, position);
@@ -315,42 +421,62 @@ export default function Canvas() {
     };
 
     const stopDrawing = (event: React.PointerEvent<HTMLCanvasElement>) => {
-        const canvas = canvasRef.current;
-        if (!canvas || !isDrawingRef.current) return;
+        const overlay = overlayRef.current;
+        if (!overlay || !isDrawingRef.current) return;
 
-        if (canvas.hasPointerCapture(event.pointerId)) {
-            canvas.releasePointerCapture(event.pointerId);
+        if (overlay.hasPointerCapture(event.pointerId)) {
+            overlay.releasePointerCapture(event.pointerId);
         }
         isDrawingRef.current = false;
 
-        // Commit the finished stroke onto the main canvas at the chosen opacity.
-        const ctxs = getContexts();
-        if (ctxs && brushStyle !== "eraser") {
-            ctxs.main.save();
-            ctxs.main.globalAlpha = opacity;
-            ctxs.main.drawImage(ctxs.overlay, 0, 0);
-            ctxs.main.restore();
-            ctxs.layer.clearRect(0, 0, ctxs.overlay.width, ctxs.overlay.height);
+        const changes: HistoryEntry = [];
+
+        if (brushStyle === "eraser") {
+            pendingBeforeRef.current.forEach((before, layerId) => {
+                const layer = layerMapRef.current.get(layerId);
+                if (layer) changes.push({ layerId, before, after: copyCanvas(layer) });
+            });
+        } else {
+            const layerId = activeLayerIdRef.current;
+            const layer =
+                layerId !== null ? layerMapRef.current.get(layerId) ?? createLayer(layerId) : null;
+            const ctx = layer?.getContext("2d");
+
+            if (layerId !== null && layer && ctx) {
+                // Commit the finished stroke into the layer at the chosen opacity.
+                ctx.save();
+                ctx.globalAlpha = opacity;
+                ctx.drawImage(overlay, 0, 0);
+                ctx.restore();
+
+                changes.push({
+                    layerId,
+                    before: pendingBeforeRef.current.get(layerId) ?? null,
+                    after: copyCanvas(layer),
+                });
+            }
+
+            overlay.getContext("2d")?.clearRect(0, 0, overlay.width, overlay.height);
         }
+
         pointsRef.current = [];
-        saveSnapshot();
+        pendingBeforeRef.current = new Map();
+        pushHistory(changes);
     };
 
     return (
         <div className="w-125 h-187.5 flex flex-col gap-3.5">
-            <div className="drawing-area relative">
+            <div ref={areaRef} className="drawing-area relative">
+                <div ref={layersRef} className="absolute inset-0" />
                 <canvas
-                    ref={canvasRef}
+                    ref={overlayRef}
+                    className="absolute inset-0 w-full h-full touch-none"
+                    style={{ opacity }}
                     onPointerDown={startDrawing}
                     onPointerMove={draw}
                     onPointerUp={stopDrawing}
                     onPointerCancel={stopDrawing}
                     onPointerLeave={stopDrawing}
-                />
-                <canvas
-                    ref={overlayRef}
-                    className="absolute pointer-events-none"
-                    style={{ opacity }}
                 />
             </div>
         </div>

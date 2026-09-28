@@ -26,7 +26,7 @@ export default function CanvasComponents() {
     const opacity = useAppSelector((state) => state.canvas.opacity);
 
     return(
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-6" data-drawing-tools>
             <div className="flex flex-row justify-between py-4">
                 <span className="font-medium text-xl ">Drawing tools</span>
                 <X/>

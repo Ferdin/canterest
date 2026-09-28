@@ -12,7 +12,16 @@ interface CanvasState {
     redoTrigger: number;
     canUndo: boolean;
     canRedo: boolean;
+    layers: LayerInfo[];
+    activeLayerId: number | null;
 }
+
+export type LayerInfo = {
+    id: number;
+    name: string;
+    thumbnail: string;
+}
+
 
 const initialState: CanvasState = {
     color: "#000000",
@@ -24,6 +33,8 @@ const initialState: CanvasState = {
     redoTrigger: 0,
     canUndo: false,
     canRedo: false,
+    layers: [],
+    activeLayerId: null,
 }
 
 const canvasSlice = createSlice({
@@ -54,9 +65,15 @@ const canvasSlice = createSlice({
         setHistoryState(state, action: PayloadAction<{ canUndo: boolean; canRedo: boolean }>) {
             state.canUndo = action.payload.canUndo;
             state.canRedo = action.payload.canRedo;
+        },
+        setLayers(state, action: PayloadAction<LayerInfo[]>) {
+            state.layers = action.payload;
+        },
+        setActiveLayer(state, action: PayloadAction<number | null>) {
+            state.activeLayerId = action.payload;
         }
     },
 });
 
-export const { setColor, setBrushSize, triggerClear, setBrushStyle, setOpacity, triggerRedo, triggerUndo, setHistoryState } = canvasSlice.actions;
+export const { setColor, setBrushSize, triggerClear, setBrushStyle, setOpacity, triggerRedo, triggerUndo, setHistoryState, setLayers, setActiveLayer } = canvasSlice.actions;
 export default canvasSlice.reducer;
