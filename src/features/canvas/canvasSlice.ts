@@ -14,6 +14,8 @@ interface CanvasState {
     canRedo: boolean;
     layers: LayerInfo[];
     activeLayerId: number | null;
+    backgroundColor: string;
+    layerOrderRequest: { order: number[]; nonce: number } | null;
 }
 
 export type LayerInfo = {
@@ -35,6 +37,8 @@ const initialState: CanvasState = {
     canRedo: false,
     layers: [],
     activeLayerId: null,
+    backgroundColor: "#ffffff",
+    layerOrderRequest: null,
 }
 
 const canvasSlice = createSlice({
@@ -71,9 +75,37 @@ const canvasSlice = createSlice({
         },
         setActiveLayer(state, action: PayloadAction<number | null>) {
             state.activeLayerId = action.payload;
+        },
+        setBackgroundColor(state, action: PayloadAction<string>) {
+            state.backgroundColor = action.payload;
+        },
+        requestLayerOrder(state, action: PayloadAction<number[]>) {
+            // Reorder the panel list right away so it doesn't snap back while Canvas applies it.
+            const byId = new Map(state.layers.map((layer) => [layer.id, layer]));
+            state.layers = action.payload.flatMap((id) => {
+                const layer = byId.get(id);
+                return layer ? [layer] : [];
+            });
+            state.layerOrderRequest = {
+                order: action.payload,
+                nonce: (state.layerOrderRequest?.nonce ?? 0) + 1,
+            };
         }
     },
 });
 
-export const { setColor, setBrushSize, triggerClear, setBrushStyle, setOpacity, triggerRedo, triggerUndo, setHistoryState, setLayers, setActiveLayer } = canvasSlice.actions;
+export const { 
+    setColor,
+    setBrushSize,
+    triggerClear,
+    setBrushStyle,
+    setOpacity, 
+    triggerRedo, 
+    triggerUndo, 
+    setHistoryState, 
+    setLayers, 
+    setActiveLayer,
+    setBackgroundColor,
+    requestLayerOrder
+} = canvasSlice.actions;
 export default canvasSlice.reducer;

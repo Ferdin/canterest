@@ -1,6 +1,13 @@
 import { useEffect, useRef } from "react";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
-import { setHistoryState, triggerUndo, triggerRedo, setLayers, setActiveLayer, type LayerInfo } from "../../../features/canvas/canvasSlice";
+import {
+    setHistoryState,
+    triggerUndo,
+    triggerRedo,
+    setLayers,
+    setActiveLayer,
+    type LayerInfo,
+} from "../../../features/canvas/canvasSlice";
 import "./index.css";
 
 type Point = { x: number; y: number };
@@ -9,7 +16,11 @@ type LayerChange = {
     before: HTMLCanvasElement | null; // null = layer didn't exist yet
     after: HTMLCanvasElement | null;  // null = layer was removed
 };
-type HistoryEntry = LayerChange[];
+type HistoryEntry = {
+    changes: LayerChange[];
+    orderBefore: number[]; // layer ids, bottom → top
+    orderAfter: number[];
+};
 
 const MAX_HISTORY = 30;
 const THUMB_WIDTH = 96;
@@ -31,6 +42,9 @@ const makeThumbnail = (layer: HTMLCanvasElement) => {
     return thumb.toDataURL("image/png");
 };
 
+const sameOrder = (a: number[], b: number[]) =>
+    a.length === b.length && a.every((id, i) => id === b[i]);
+
 export default function Canvas() {
     const dispatch = useAppDispatch();
 
@@ -39,15 +53,17 @@ export default function Canvas() {
     const overlayRef = useRef<HTMLCanvasElement>(null);
 
     const layerMapRef = useRef(new Map<number, HTMLCanvasElement>());
+    const layerOrderRef = useRef<number[]>([]); // bottom → top
     const activeLayerIdRef = useRef<number | null>(null);
     const nextLayerIdRef = useRef(1);
 
     const isDrawingRef = useRef(false);
     const pointsRef = useRef<Point[]>([]);
     const pendingBeforeRef = useRef(new Map<number, HTMLCanvasElement | null>());
+    const pendingOrderBeforeRef = useRef<number[]>([]);
 
     const historyRef = useRef<HistoryEntry[]>([]);
-    const historyIndexRef = useRef(0); // number of entries currently applied
+    const historyIndexRef = useRef(0);
 
     const color = useAppSelector((state) => state.canvas.color);
     const brushSize = useAppSelector((state) => state.canvas.brushSize);
@@ -56,28 +72,30 @@ export default function Canvas() {
     const clearTrigger = useAppSelector((state) => state.canvas.clearTrigger);
     const undoTrigger = useAppSelector((state) => state.canvas.undoTrigger);
     const redoTrigger = useAppSelector((state) => state.canvas.redoTrigger);
-
     const activeLayerId = useAppSelector((state) => state.canvas.activeLayerId);
+    const backgroundColor = useAppSelector((state) => state.canvas.backgroundColor);
+    const layerOrderRequest = useAppSelector((state) => state.canvas.layerOrderRequest);
 
-    useEffect(() => {
-        activeLayerIdRef.current = activeLayerId;
-    }, [activeLayerId]);
+    // ---------- Redux sync ----------
 
-    // Updates the ref immediately (a stroke may be starting) and tells Redux.
     const setActive = (id: number | null) => {
         activeLayerIdRef.current = id;
         dispatch(setActiveLayer(id));
-    }
+    };
 
     const syncLayers = () => {
-        const layers: LayerInfo[] = [...layerMapRef.current.entries()]
-            .sort((a, b) => a[0] - b[0])
-            .map(([id, canvas], index) => ({
-                id,
-                name: `Layer ${index + 1}`,
-                thumbnail: makeThumbnail(canvas),
-            }));
+        const layers: LayerInfo[] = layerOrderRef.current.flatMap((id) => {
+            const canvas = layerMapRef.current.get(id);
+            return canvas ? [{ id, name: `Layer ${id}`, thumbnail: makeThumbnail(canvas) }] : [];
+        });
         dispatch(setLayers(layers));
+    };
+
+    const syncHistoryState = () => {
+        dispatch(setHistoryState({
+            canUndo: historyIndexRef.current > 0,
+            canRedo: historyIndexRef.current < historyRef.current.length,
+        }));
     };
 
     // ---------- layers ----------
@@ -94,13 +112,7 @@ export default function Canvas() {
         layer.style.cssText =
             "position:absolute;inset:0;width:100%;height:100%;pointer-events:none;";
 
-        // Keep DOM order matching id order so newer layers sit on top,
-        // including when redo recreates an older layer.
-        const nextSibling = [...layerMapRef.current.entries()]
-            .filter(([otherId]) => otherId > id)
-            .sort((a, b) => a[0] - b[0])[0]?.[1];
-
-        container.insertBefore(layer, nextSibling ?? null);
+        container.appendChild(layer);
         layerMapRef.current.set(id, layer);
         return layer;
     };
@@ -108,7 +120,21 @@ export default function Canvas() {
     const removeLayer = (id: number) => {
         layerMapRef.current.get(id)?.remove();
         layerMapRef.current.delete(id);
+        layerOrderRef.current = layerOrderRef.current.filter((other) => other !== id);
         if (activeLayerIdRef.current === id) setActive(null);
+    };
+
+    // Re-appends layer canvases in order; appendChild moves existing nodes.
+    const applyOrder = (order: number[]) => {
+        const container = layersRef.current;
+        if (!container) return;
+
+        const valid = order.filter((id) => layerMapRef.current.has(id));
+        const missing = [...layerMapRef.current.keys()].filter((id) => !valid.includes(id));
+        const finalOrder = [...valid, ...missing];
+
+        finalOrder.forEach((id) => container.appendChild(layerMapRef.current.get(id)!));
+        layerOrderRef.current = finalOrder;
     };
 
     const applyLayerState = (id: number, snapshot: HTMLCanvasElement | null) => {
@@ -131,18 +157,11 @@ export default function Canvas() {
 
     // ---------- history ----------
 
-    const syncHistoryState = () => {
-        dispatch(setHistoryState({
-            canUndo: historyIndexRef.current > 0,
-            canRedo: historyIndexRef.current < historyRef.current.length,
-        }));
-    };
-
-    const pushHistory = (entry: HistoryEntry) => {
-        if (entry.length === 0) return;
+    const pushHistory = (changes: LayerChange[], orderBefore: number[], orderAfter: number[]) => {
+        if (changes.length === 0 && sameOrder(orderBefore, orderAfter)) return;
 
         const history = historyRef.current.slice(0, historyIndexRef.current);
-        history.push(entry);
+        history.push({ changes, orderBefore, orderAfter });
         if (history.length > MAX_HISTORY) history.shift();
 
         historyRef.current = history;
@@ -154,7 +173,8 @@ export default function Canvas() {
     const undo = () => {
         if (isDrawingRef.current || historyIndexRef.current === 0) return;
         const entry = historyRef.current[historyIndexRef.current - 1];
-        entry.forEach((change) => applyLayerState(change.layerId, change.before));
+        entry.changes.forEach((change) => applyLayerState(change.layerId, change.before));
+        applyOrder(entry.orderBefore);
         historyIndexRef.current -= 1;
         syncHistoryState();
         syncLayers();
@@ -163,13 +183,18 @@ export default function Canvas() {
     const redo = () => {
         if (isDrawingRef.current || historyIndexRef.current >= historyRef.current.length) return;
         const entry = historyRef.current[historyIndexRef.current];
-        entry.forEach((change) => applyLayerState(change.layerId, change.after));
+        entry.changes.forEach((change) => applyLayerState(change.layerId, change.after));
+        applyOrder(entry.orderAfter);
         historyIndexRef.current += 1;
         syncHistoryState();
         syncLayers();
     };
 
     // ---------- effects ----------
+
+    useEffect(() => {
+        activeLayerIdRef.current = activeLayerId;
+    }, [activeLayerId]);
 
     useEffect(() => {
         const area = areaRef.current;
@@ -179,7 +204,6 @@ export default function Canvas() {
         const resizeCanvas = () => {
             const { width, height } = area.getBoundingClientRect();
 
-            // Preserve each layer's drawing when resizing.
             layerMapRef.current.forEach((layer) => {
                 const old = copyCanvas(layer);
                 layer.width = width;
@@ -203,18 +227,27 @@ export default function Canvas() {
     useEffect(() => {
         if (clearTrigger === 0) return;
 
-        const changes: HistoryEntry = [...layerMapRef.current].map(([layerId, layer]) => ({
-            layerId,
-            before: copyCanvas(layer),
-            after: null,
-        }));
+        const orderBefore = [...layerOrderRef.current];
+        const changes: LayerChange[] = orderBefore.flatMap((layerId) => {
+            const layer = layerMapRef.current.get(layerId);
+            return layer ? [{ layerId, before: copyCanvas(layer), after: null }] : [];
+        });
         changes.forEach((change) => removeLayer(change.layerId));
 
         const overlay = overlayRef.current;
         overlay?.getContext("2d")?.clearRect(0, 0, overlay.width, overlay.height);
 
-        pushHistory(changes);
+        pushHistory(changes, orderBefore, []);
     }, [clearTrigger]);
+
+    // Reorder requested from the layers panel.
+    useEffect(() => {
+        if (!layerOrderRequest || isDrawingRef.current) return;
+
+        const orderBefore = [...layerOrderRef.current];
+        applyOrder(layerOrderRequest.order);
+        pushHistory([], orderBefore, [...layerOrderRef.current]);
+    }, [layerOrderRequest]);
 
     useEffect(() => {
         if (undoTrigger === 0) return;
@@ -226,7 +259,6 @@ export default function Canvas() {
         redo();
     }, [redoTrigger]);
 
-    // Clicking outside the drawing area (and outside the toolbar) ends the current layer.
     useEffect(() => {
         const onPointerDown = (event: PointerEvent) => {
             const target = event.target;
@@ -332,7 +364,6 @@ export default function Canvas() {
         if (!overlay || !preview) return;
 
         if (brushStyle === "eraser") {
-            // Erase through every layer under the pointer.
             layerMapRef.current.forEach((layer) => {
                 const ctx = layer.getContext("2d");
                 if (!ctx) return;
@@ -395,7 +426,6 @@ export default function Canvas() {
             if (activeId !== null && active) {
                 before.set(activeId, copyCanvas(active));
             } else {
-                // No active layer: this stroke starts a new one.
                 const id = nextLayerIdRef.current++;
                 setActive(id);
                 before.set(id, null);
@@ -403,6 +433,7 @@ export default function Canvas() {
         }
 
         pendingBeforeRef.current = before;
+        pendingOrderBeforeRef.current = [...layerOrderRef.current];
         overlay.setPointerCapture(event.pointerId);
         isDrawingRef.current = true;
         pointsRef.current = [position];
@@ -429,7 +460,7 @@ export default function Canvas() {
         }
         isDrawingRef.current = false;
 
-        const changes: HistoryEntry = [];
+        const changes: LayerChange[] = [];
 
         if (brushStyle === "eraser") {
             pendingBeforeRef.current.forEach((before, layerId) => {
@@ -438,12 +469,16 @@ export default function Canvas() {
             });
         } else {
             const layerId = activeLayerIdRef.current;
-            const layer =
-                layerId !== null ? layerMapRef.current.get(layerId) ?? createLayer(layerId) : null;
-            const ctx = layer?.getContext("2d");
+            let layer = layerId !== null ? layerMapRef.current.get(layerId) : undefined;
 
+            // First stroke of a new layer: create it on top.
+            if (layerId !== null && !layer) {
+                layer = createLayer(layerId) ?? undefined;
+                if (layer) layerOrderRef.current = [...layerOrderRef.current, layerId];
+            }
+
+            const ctx = layer?.getContext("2d");
             if (layerId !== null && layer && ctx) {
-                // Commit the finished stroke into the layer at the chosen opacity.
                 ctx.save();
                 ctx.globalAlpha = opacity;
                 ctx.drawImage(overlay, 0, 0);
@@ -461,12 +496,16 @@ export default function Canvas() {
 
         pointsRef.current = [];
         pendingBeforeRef.current = new Map();
-        pushHistory(changes);
+        pushHistory(changes, pendingOrderBeforeRef.current, [...layerOrderRef.current]);
     };
 
     return (
         <div className="w-125 h-187.5 flex flex-col gap-3.5">
-            <div ref={areaRef} className="drawing-area relative">
+            <div
+                ref={areaRef}
+                className="drawing-area relative"
+                style={{ backgroundColor }}
+            >
                 <div ref={layersRef} className="absolute inset-0" />
                 <canvas
                     ref={overlayRef}
