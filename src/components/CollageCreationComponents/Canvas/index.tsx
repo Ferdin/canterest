@@ -48,6 +48,8 @@ const sameOrder = (a: number[], b: number[]) =>
 export default function Canvas() {
     const dispatch = useAppDispatch();
 
+    const cursorRef = useRef<HTMLDivElement>(null);
+
     const areaRef = useRef<HTMLDivElement>(null);
     const layersRef = useRef<HTMLDivElement>(null);
     const overlayRef = useRef<HTMLCanvasElement>(null);
@@ -75,6 +77,27 @@ export default function Canvas() {
     const activeLayerId = useAppSelector((state) => state.canvas.activeLayerId);
     const backgroundColor = useAppSelector((state) => state.canvas.backgroundColor);
     const layerOrderRequest = useAppSelector((state) => state.canvas.layerOrderRequest);
+
+    const cursorDiameter = Math.max(4, brushStyle === "spray" ? brushSize * 2 : brushSize);
+
+    const moveCursor = (event: React.PointerEvent<HTMLCanvasElement>) => {
+        const cursor = cursorRef.current;
+        const position = getPosition(event);
+        
+        if (!cursor || !position) return;
+
+        if (event.pointerType === "touch") {
+            cursor.style.visibility = "hidden";
+            return;
+        }
+
+        cursor.style.visibility = "visible";
+        cursor.style.transform = `translate(${position.x}px, ${position.y}px) translate(-50%, -50%)`;
+    };
+
+    const hideCursor = () => {
+        if (cursorRef.current) cursorRef.current.style.visibility = "hidden";
+    }
 
     // ---------- Redux sync ----------
 
@@ -411,6 +434,7 @@ export default function Canvas() {
     // ---------- pointer handlers ----------
 
     const startDrawing = (event: React.PointerEvent<HTMLCanvasElement>) => {
+        moveCursor(event);
         const overlay = overlayRef.current;
         const position = getPosition(event);
         if (!overlay || !position) return;
@@ -441,6 +465,7 @@ export default function Canvas() {
     };
 
     const draw = (event: React.PointerEvent<HTMLCanvasElement>) => {
+        moveCursor(event);
         if (!isDrawingRef.current) return;
         const position = getPosition(event);
         if (!position) return;
@@ -452,6 +477,7 @@ export default function Canvas() {
     };
 
     const stopDrawing = (event: React.PointerEvent<HTMLCanvasElement>) => {
+        if (event.type === "pointerleave") hideCursor();
         const overlay = overlayRef.current;
         if (!overlay || !isDrawingRef.current) return;
 
@@ -503,19 +529,38 @@ export default function Canvas() {
         <div className="w-125 h-187.5 flex flex-col gap-3.5">
             <div
                 ref={areaRef}
-                className="drawing-area relative"
+                className="drawing-area relative overflow-hidden"
                 style={{ backgroundColor }}
             >
                 <div ref={layersRef} className="absolute inset-0" />
                 <canvas
                     ref={overlayRef}
-                    className="absolute inset-0 w-full h-full touch-none"
+                    className="absolute inset-0 w-full h-full touch-none cursor-none"
                     style={{ opacity }}
-                    onPointerDown={startDrawing}
-                    onPointerMove={draw}
+                    onPointerDown={(e) => {
+                        moveCursor(e);
+                        startDrawing(e);
+                    }}
+                    onPointerMove={(e) => {
+                        moveCursor(e);
+                        draw(e);
+                    }}
                     onPointerUp={stopDrawing}
                     onPointerCancel={stopDrawing}
-                    onPointerLeave={stopDrawing}
+                    onPointerLeave={(e) => {
+                        hideCursor();
+                        stopDrawing(e);
+                    }}
+                />
+                <div
+                    ref={cursorRef}
+                    aria-hidden
+                    className="invisible pointer-events-none absolute left-0 top-0 rounded-full border border-white"
+                    style={{
+                        width: cursorDiameter,
+                        height: cursorDiameter,
+                        boxShadow: "0 0 0 1px rgba(0, 0, 0, 0.6)",
+                    }}
                 />
             </div>
         </div>
