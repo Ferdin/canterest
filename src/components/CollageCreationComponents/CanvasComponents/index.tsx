@@ -6,7 +6,8 @@ import {
     triggerClear,
     setBrushStyle,
     setOpacity,
-    type BrushStyle, 
+    type BrushStyle,
+    setActiveTool, 
 } from "../../../features/canvas/canvasSlice";
 import RangeSlider from "./RangeSlider.tsx";
 
@@ -29,7 +30,14 @@ export default function CanvasComponents() {
         <div className="flex flex-col gap-6" data-drawing-tools>
             <div className="flex flex-row justify-between py-4">
                 <span className="font-medium text-xl ">Drawing tools</span>
-                <X/>
+                <button
+                    type="button"
+                    aria-label="Close drawing tools"
+                    className="hover:cursor-pointer"
+                    onClick={() => dispatch(setActiveTool(null))}
+                >
+                    <X/>
+                </button>
             </div>
 
             <div className="flex flex-row justify-between items-center">

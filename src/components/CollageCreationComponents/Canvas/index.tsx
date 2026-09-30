@@ -77,10 +77,16 @@ export default function Canvas() {
     const activeLayerId = useAppSelector((state) => state.canvas.activeLayerId);
     const backgroundColor = useAppSelector((state) => state.canvas.backgroundColor);
     const layerOrderRequest = useAppSelector((state) => state.canvas.layerOrderRequest);
+    const activeTool = useAppSelector((state) => state.canvas.activeTool);
+    const isDrawTool = activeTool === "draw";
 
     const cursorDiameter = Math.max(4, brushStyle === "spray" ? brushSize * 2 : brushSize);
 
     const moveCursor = (event: React.PointerEvent<HTMLCanvasElement>) => {
+        if (!isDrawTool) {
+            hideCursor();
+            return;
+        }
         const cursor = cursorRef.current;
         const position = getPosition(event);
         
@@ -434,6 +440,7 @@ export default function Canvas() {
     // ---------- pointer handlers ----------
 
     const startDrawing = (event: React.PointerEvent<HTMLCanvasElement>) => {
+        if (!isDrawTool) return;
         moveCursor(event);
         const overlay = overlayRef.current;
         const position = getPosition(event);
@@ -535,7 +542,9 @@ export default function Canvas() {
                 <div ref={layersRef} className="absolute inset-0" />
                 <canvas
                     ref={overlayRef}
-                    className="absolute inset-0 w-full h-full touch-none cursor-none"
+                    className={`absolute inset-0 w-full h-full touch-none ${
+                        isDrawTool ? "cursor-none" : "cursor-default"
+                    }`}
                     style={{ opacity }}
                     onPointerDown={(e) => {
                         moveCursor(e);

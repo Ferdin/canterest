@@ -2,6 +2,8 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 
 export type BrushStyle = "pencil" | "eraser" | "glow" | "spray" | "crayon";
 
+export type Tool = "draw" | "text" | "image";
+
 interface CanvasState {
     color: string;
     brushSize: number;
@@ -16,6 +18,7 @@ interface CanvasState {
     activeLayerId: number | null;
     backgroundColor: string;
     layerOrderRequest: { order: number[]; nonce: number } | null;
+    activeTool: Tool | null;
 }
 
 export type LayerInfo = {
@@ -39,6 +42,7 @@ const initialState: CanvasState = {
     activeLayerId: null,
     backgroundColor: "#ffffff",
     layerOrderRequest: null,
+    activeTool: "draw"
 }
 
 const canvasSlice = createSlice({
@@ -79,6 +83,9 @@ const canvasSlice = createSlice({
         setBackgroundColor(state, action: PayloadAction<string>) {
             state.backgroundColor = action.payload;
         },
+        setActiveTool(state, action: PayloadAction<Tool | null>) {
+            state.activeTool = action.payload;
+        },
         requestLayerOrder(state, action: PayloadAction<number[]>) {
             // Reorder the panel list right away so it doesn't snap back while Canvas applies it.
             const byId = new Map(state.layers.map((layer) => [layer.id, layer]));
@@ -106,6 +113,7 @@ export const {
     setLayers, 
     setActiveLayer,
     setBackgroundColor,
-    requestLayerOrder
+    requestLayerOrder,
+    setActiveTool,
 } = canvasSlice.actions;
 export default canvasSlice.reducer;

@@ -2,8 +2,9 @@ import { Ellipsis, Image, LineSquiggle, Redo2, Type, Undo2, X } from "lucide-rea
 import Canvas from "../CollageCreationComponents/Canvas";
 import CanvasComponents from "../CollageCreationComponents/CanvasComponents";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
-import { triggerUndo, triggerRedo } from "../../features/canvas/canvasSlice";
+import { triggerUndo, triggerRedo, type Tool, setActiveTool } from "../../features/canvas/canvasSlice";
 import LayersPanel from "../CollageCreationComponents/LayersPanel";
+import TypeComponents from "../CollageCreationComponents/TypeComponents";
 
 export default function CollageCreationTool(){
 
@@ -11,6 +12,13 @@ export default function CollageCreationTool(){
     const canUndo = useAppSelector((state) => state.canvas.canUndo);
     const canRedo = useAppSelector((state) => state.canvas.canRedo);
 
+    const TOOLS: {id: Tool, label: string, Icon: typeof Type}[] = [
+        { id: "text", label: "text", Icon: Type },
+        { id: "draw", label: "Draw", Icon: LineSquiggle },
+        { id: "image", label: "Image", Icon: Image },
+    ];
+
+    const activeTool = useAppSelector((state) => state.canvas.activeTool);
 
     return(
         <div className="flex flex-row">
@@ -51,16 +59,33 @@ export default function CollageCreationTool(){
                         <div className="w-full flex justify-center">
                             <Canvas/>
                         </div>
-                        <div className="flex flex-row gap-4 justify-center mt-2">
-                            <Type className="cursor-pointer hover:bg-olive-300 p-2 rounded-lg" width={48} height={48}/>
-                            <LineSquiggle className="cursor-pointer hover:bg-olive-300 p-2 rounded-lg" width={48} height={48}/>
-                            <Image className="cursor-pointer hover:bg-olive-300 p-2 rounded-lg" width={48} height={48}/>
+                        <div
+                            className="flex flex-row gap-4 justify-center mt-2"
+                            role="toolbar"
+                            aria-label="Collage tools"
+                        >
+                            {TOOLS.map(({ id, label, Icon }) => (
+                                <button
+                                    key={id}
+                                    type="button"
+                                    title={label}
+                                    aria-label={label}
+                                    aria-pressed={activeTool === id}
+                                    onClick={() => dispatch(setActiveTool(id))}
+                                    className={`cursor-pointer p-2 rounded-lg ${
+                                        activeTool === id ? "bg-olive-300" : "hover:bg-olive-300"
+                                    }`}
+                                >
+                                    <Icon width={32} height={32} />
+                                </button>
+                            ))}
                         </div>
                     </div>
                 </div>
             </div>
             <div className="w-[40%] px-6 mt-4">
-                <CanvasComponents/>
+                {activeTool === "draw" && <CanvasComponents />}
+                {activeTool === "text" && <TypeComponents />}
             </div>
         </div>
     )
