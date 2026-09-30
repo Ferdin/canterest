@@ -83,18 +83,20 @@ export default function LayersPanel() {
         const dy = Math.min(maxDy, Math.max(minDy, event.clientY - start.startY));
 
         // Drop index = where the dragged row's center sits among the others' centers.
-        const center = self.top + self.height / 2 + dy;
+        // Swap once the dragged row's leading edge crosses a neighbour's center.
+        const top = self.top + dy;
+        const bottom = top + self.height;
         const centers = rects.map((rect) => rect.top + rect.height / 2);
 
         let to = drag.from;
         for (let i = 0; i < drag.from; i++) {
-            if (center < centers[i]) {
+            if (top < centers[i]) {
                 to = i;
                 break;
             }
         }
         for (let i = rects.length - 1; i > drag.from; i--) {
-            if (center > centers[i]) {
+            if (bottom > centers[i]) {
                 to = i;
                 break;
             }
