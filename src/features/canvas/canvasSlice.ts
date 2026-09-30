@@ -4,6 +4,26 @@ export type BrushStyle = "pencil" | "eraser" | "glow" | "spray" | "crayon";
 
 export type Tool = "draw" | "text" | "image";
 
+export type  TextAlign = "left" | "center" | "right";
+
+export type TextStyle = {
+    fontFamily: string;
+    fontSize: number;
+    color: string;
+    align: TextAlign;
+}
+
+export const TEXT_FONTS = [
+    { label: "Arial", value: "Arial, Helvetica, sans-serif" },
+    { label: "Georgia", value: "Georgia, 'Times New Roman', serif" },
+    { label: "Times New Roman", value: "'Times New Roman', Times, serif" },
+    { label: "Courier New", value: "'Courier New', Courier, monospace" },
+    { label: "Verdana", value: "Verdana, Geneva, sans-serif" },
+    { label: "Trebuchet MS", value: "'Trebuchet MS', Helvetica, sans-serif" },
+    { label: "Impact", value: "Impact, 'Arial Black', sans-serif" },
+    { label: "Comic Sans MS", value: "'Comic Sans MS', 'Comic Sans', cursive" },
+];
+
 interface CanvasState {
     color: string;
     brushSize: number;
@@ -19,10 +39,13 @@ interface CanvasState {
     backgroundColor: string;
     layerOrderRequest: { order: number[]; nonce: number } | null;
     activeTool: Tool | null;
+    textStyle: TextStyle;
+    addTextTrigger: number;
 }
 
 export type LayerInfo = {
     id: number;
+    kind: "draw" | "text";
     name: string;
     thumbnail: string;
 }
@@ -42,7 +65,14 @@ const initialState: CanvasState = {
     activeLayerId: null,
     backgroundColor: "#ffffff",
     layerOrderRequest: null,
-    activeTool: "draw"
+    activeTool: "draw",
+    textStyle: {
+        fontFamily: TEXT_FONTS[0].value,
+        fontSize: 32,
+        color: "#111111",
+        align: "center",
+    },
+    addTextTrigger: 0,
 }
 
 const canvasSlice = createSlice({
@@ -86,6 +116,12 @@ const canvasSlice = createSlice({
         setActiveTool(state, action: PayloadAction<Tool | null>) {
             state.activeTool = action.payload;
         },
+        setTextStyle(state, action: PayloadAction<Partial<TextStyle>>) {
+            state.textStyle = { ...state.textStyle, ...action.payload };
+        },
+        triggerAddText(state) {
+            state.addTextTrigger += 1;
+        },
         requestLayerOrder(state, action: PayloadAction<number[]>) {
             // Reorder the panel list right away so it doesn't snap back while Canvas applies it.
             const byId = new Map(state.layers.map((layer) => [layer.id, layer]));
@@ -115,5 +151,7 @@ export const {
     setBackgroundColor,
     requestLayerOrder,
     setActiveTool,
+    setTextStyle,
+    triggerAddText,
 } = canvasSlice.actions;
 export default canvasSlice.reducer;

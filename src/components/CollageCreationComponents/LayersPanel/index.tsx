@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { GripVertical, Lock } from "lucide-react";
+import { GripVertical, Lock, Type } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import {
     requestLayerOrder,
@@ -226,14 +226,23 @@ export default function LayersPanel() {
                                             onClick={() => dispatch(setActiveLayer(layer.id))}
                                             className="flex flex-1 items-center gap-3 text-left"
                                         >
-                                            {layer.thumbnail && (
-                                                <img
-                                                    src={layer.thumbnail}
-                                                    alt=""
-                                                    draggable={false}
-                                                    className="h-16 w-12 rounded-md border border-gray-200 object-contain"
+                                            {layer.kind === "text" ? (
+                                                <span
+                                                    className="flex h-16 w-12 items-center justify-center rounded-md border border-gray-200"
                                                     style={{ backgroundColor }}
-                                                />
+                                                >
+                                                    <Type size={20} className="text-gray-600" />
+                                                </span>
+                                            ) : (
+                                                layer.thumbnail && (
+                                                    <img
+                                                        src={layer.thumbnail}
+                                                        alt=""
+                                                        draggable={false}
+                                                        className="h-16 w-12 rounded-md border border-gray-200 object-contain"
+                                                        style={{ backgroundColor }}
+                                                    />
+                                                )
                                             )}
                                             <span className="text-sm font-medium">{layer.name}</span>
                                         </button>
