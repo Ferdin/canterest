@@ -508,6 +508,7 @@ export default function Canvas() {
 
         const resizeCanvas = () => {
             const { width, height } = area.getBoundingClientRect();
+            if (width === 0 || height === 0) return;
 
             // Text layers position themselves in percentages, so only canvases need this.
             layerMapRef.current.forEach((layer) => {
@@ -529,6 +530,8 @@ export default function Canvas() {
 
         resizeCanvas();
         window.addEventListener("resize", resizeCanvas);
+        const observer = new ResizeObserver(resizeCanvas);
+        observer.observe(area);
         return () => window.removeEventListener("resize", resizeCanvas);
     }, []);
 
@@ -581,6 +584,8 @@ export default function Canvas() {
 
     useEffect(() => {
         const onKeyDown = (event: KeyboardEvent) => {
+            // Editor hidden (publish step): ignore shortcuts.
+            if (!areaRef.current || areaRef.current.getClientRects().length === 0) return;
             const target = event.target;
             if (
                 target instanceof HTMLElement &&
