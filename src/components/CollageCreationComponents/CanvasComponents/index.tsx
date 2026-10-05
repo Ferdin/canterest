@@ -44,29 +44,29 @@ export default function CanvasComponents() {
                 <span className="font-semibold">Style</span>
                 <div className="flex flex-row gap-6">
                     {BRUSHES.map(({ id, label, Icon }) => (
-                        <div className="relative group inline-block">
+                        <div key={id} className="relative group inline-block">
                             <button
-                                key={id}
                                 type="button"
-                                title={label}
+                                aria-label={label}
                                 aria-pressed={brushStyle === id}
                                 onClick={() => dispatch(setBrushStyle(id))}
                                 className={`flex flex-col items-center p-2 rounded-lg ${
                                     brushStyle === id
-                                    ? "border-black bg-gray-100"
-                                    : "border-gray-200 hover:bg-gray-50"
+                                        ? "border-black bg-gray-100"
+                                        : "border-gray-200 hover:bg-gray-50"
                                 }`}
                             >
                                 <Icon size={24} />
                             </button>
-                            <div className="absolute bottom-full left-1/2 mb-2 -translate-x-1/2
-                                            hidden group-hover:block
-                                            whitespace-nowrap rounded bg-gray-800 px-2 py-1
-                                            text-sm text-white"
-                                 key={id}           
+                            <div
+                                role="tooltip"
+                                className="pointer-events-none absolute bottom-full left-1/2 mb-2 -translate-x-1/2
+                                        hidden group-hover:block group-focus-within:block
+                                        whitespace-nowrap rounded bg-gray-800 px-2 py-1
+                                        text-sm text-white"
                             >
                                 {label}
-                            </div>    
+                            </div>
                         </div>
                     ))}
                 </div>
