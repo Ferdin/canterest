@@ -10,6 +10,7 @@ import {
     setTextStyle,
     type LayerInfo,
     type TextStyle,
+    setExportedImage,
 } from "../../../features/canvas/canvasSlice";
 import "./index.css";
 
@@ -57,6 +58,11 @@ const MAX_HISTORY = 30;
 const THUMB_WIDTH = 96;
 const MERGE_WINDOW_MS = 1000;
 const DEFAULT_TEXT = "Add text";
+
+const EXPORT_SCALE = 2;
+const TEXT_PAD_X = 8;
+const TEXT_PAD_Y = 4;
+const TEXT_LINE_HEIGHT = 1.2;
 
 const copyCanvas = (source: HTMLCanvasElement) => {
     const copy = document.createElement("canvas");
@@ -125,6 +131,42 @@ const selectAllText = (el: HTMLElement) => {
     selection?.addRange(range);
 };
 
+const drawTextLayer = (
+    ctx: CanvasRenderingContext2D,
+    data: TextData,
+    width: number,
+    height: number
+) => {
+    const lines = data.text.split("\n");
+
+    ctx.save();
+    ctx.font = `${data.fontSize}px ${data.fontFamily}`;
+    ctx.fillStyle = data.color;
+    ctx.textBaseline = "middle";
+    ctx.textAlign = data.align;
+
+    const lineHeight = data.fontSize * TEXT_LINE_HEIGHT;
+    const textWidth = Math.max(...lines.map((line) => ctx.measureText(line).width));
+    const boxWidth = textWidth + TEXT_PAD_X * 2;
+    const boxHeight = lines.length * lineHeight + TEXT_PAD_Y * 2;
+
+    const cx = data.x * width;
+    const cy = data.y * height;
+    const left = cx - boxWidth / 2;
+    const top = cy - boxHeight / 2;
+
+    const x =
+        data.align === "left" ? left + TEXT_PAD_X
+        : data.align === "right" ? left + boxWidth - TEXT_PAD_X
+        : cx;
+
+    lines.forEach((line, i) => {
+        ctx.fillText(line, x, top + TEXT_PAD_Y + lineHeight * (i + 0.5));
+    });
+
+    ctx.restore();
+}
+
 export default function Canvas() {
     const dispatch = useAppDispatch();
 
@@ -167,6 +209,64 @@ export default function Canvas() {
     const isDrawTool = activeTool === "draw";
     const isTextTool = activeTool === "text";
     const cursorDiameter = Math.max(4, brushStyle === "spray" ? brushSize * 2 : brushSize);
+
+    const exportTrigger = useAppSelector((state) => state.canvas.exportTrigger);
+    const exportUrlRef = useRef<string | null>(null);
+
+    const exportImage = async (): Promise<string | null> => {
+        const overlay = overlayRef.current;
+        if (!overlay) return null;
+
+        // The editor is already hidden when this runs (it measures 0×0),
+        // so use the overlay's stored size instead of measuring.
+        const width = overlay.width;
+        const height = overlay.height;
+        if (!width || !height) return null;
+
+        // Make sure any web fonts used by text layers have loaded before drawing.
+        await document.fonts?.ready;
+
+        const out = document.createElement("canvas");
+        out.width = width * EXPORT_SCALE;
+        out.height = height * EXPORT_SCALE;
+
+        const ctx = out.getContext("2d");
+        if (!ctx) return null;
+        ctx.scale(EXPORT_SCALE, EXPORT_SCALE);
+
+        ctx.fillStyle = backgroundColor;
+        ctx.fillRect(0, 0, width, height);
+
+        for (const id of layerOrderRef.current) {
+            const layer = layerMapRef.current.get(id);
+            if (!layer) continue;
+            if (layer.kind === "draw") ctx.drawImage(layer.canvas, 0, 0, width, height);
+            else drawTextLayer(ctx, layer.data, width, height);
+        }
+
+        const blob = await new Promise<Blob | null>((resolve) => out.toBlob(resolve, "image/png"));
+        return blob ? URL.createObjectURL(blob) : null;
+    };
+
+    useEffect(() => {
+        if (exportTrigger === 0) return;
+        let cancelled = false;
+
+        exportImage().then((url) => {
+            if (cancelled) {
+                if (url) URL.revokeObjectURL(url);
+                return;
+            }
+            // Free the previous export's memory before replacing it.
+            if (exportUrlRef.current) URL.revokeObjectURL(exportUrlRef.current);
+            exportUrlRef.current = url;
+            dispatch(setExportedImage(url));
+        });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [exportTrigger]);
 
     // ---------- Redux sync ----------
 
@@ -250,8 +350,11 @@ export default function Canvas() {
         const el = document.createElement("div");
         el.dataset.layerId = String(id);
         el.dataset.textLayer = "";
+        // el.style.cssText =
+        //     "position:absolute;transform:translate(-50%,-50%);white-space:pre;line-height:1.2;padding:4px 8px;outline-offset:2px;";
         el.style.cssText =
-            "position:absolute;transform:translate(-50%,-50%);white-space:pre;line-height:1.2;padding:4px 8px;outline-offset:2px;";
+            `position:absolute;transform:translate(-50%,-50%);white-space:pre;` +
+            `line-height:${TEXT_LINE_HEIGHT};padding:${TEXT_PAD_Y}px ${TEXT_PAD_X}px;outline-offset:2px;`;    
         setEditable(el, false);
 
         container.appendChild(el);

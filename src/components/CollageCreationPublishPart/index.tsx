@@ -1,4 +1,6 @@
 import { ChevronDown, ChevronLeft } from "lucide-react";
+import { useState } from "react";
+import { useAppSelector } from "../../app/hooks";
 
 type CollageCreationPublishPartProps = {
     onBack: () => void;
@@ -7,6 +9,14 @@ type CollageCreationPublishPartProps = {
 export default function CollageCreationPublishPart(
     { onBack }: CollageCreationPublishPartProps
 ) {
+    const [toggle, setToggle] = useState<boolean>(false);
+
+    const toggleDropdown = () => {
+        setToggle((state) => !state);    
+    }
+
+    const exportedImage = useAppSelector((state) => state.canvas.exportedImage);
+
     return (
         <div>
             <div className="flex flex-row justify-between p-6">
@@ -19,34 +29,43 @@ export default function CollageCreationPublishPart(
                 </div>
             </div>
             <div className="flex justify-center">
-                <div>
-                    {/**
-                     * Canvas review
-                     */}
+                <div className="mr-10 w-80 shrink-0">
+                    {exportedImage ? (
+                        <img
+                            src={exportedImage}
+                            alt="Collage preview"
+                            className="w-full rounded-2xl shadow-md"
+                        />
+                    ) : (
+                        <div className="aspect-2/3 w-full animate-pulse rounded-2xl bg-gray-200" />
+                    )}
                 </div>
                 <div className="flex flex-col gap-4">
                     <div className="flex flex-col">
-                        <span className="text-sm">Title</span>
-                        <input type="text" placeholder="Add a title" className="border p-2 rounded-lg mt-2 w-lg"/>
+                        <span className="text-sm text-olive-600">Title</span>
+                        <input type="text" placeholder="Add a title" className="border border-olive-300 p-2 rounded-lg mt-2 w-lg"/>
                     </div>
                     <div className="flex flex-col">
-                        <span className="text-sm">Description</span>
-                        <textarea placeholder="Add a description" className="border p-2 rounded-lg mt-2 w-lg"/>
+                        <span className="text-sm text-olive-600">Description</span>
+                        <textarea placeholder="Add a description" className="border border-olive-300 p-2 rounded-lg mt-2 w-lg"/>
                     </div>
                     <div className="flex flex-col">
-                        <span className="text-sm">Board</span>
-                        <div className="border p-2 rounded-lg mt-2 w-lg h-10 flex justify-between cursor-pointer">
+                        <span className="text-sm text-olive-600">Board</span>
+                        <div className="border p-2 rounded-lg mt-2 w-lg h-10 flex justify-between cursor-pointer border-olive-300" onClick={toggleDropdown}>
                             <div className="flex items-center gap-2">
                                 <div className="w-6 h-6 bg-amber-500 rounded"></div>
                                 Profile
                             </div>
                             <ChevronDown/>
                         </div>
+                        {toggle && (<div className="absolute w-lg h-54 rounded-md shadow bg-white mt-20 z-10">
+
+                        </div>)}
                     </div>
                     <div className="flex flex-row items-center">
                         <div className="flex flex-col w-full p-2">
-                            <span className="font-semibold">Enable remixing</span>
-                            <span className="text-sm">Let others create their own collage from yours.</span>
+                            <span className="font-semibold text-olive-700">Enable remixing</span>
+                            <span className="text-sm text-olive-600">Let others create their own collage from yours.</span>
                         </div>
                         <div className="flex justify-end w-full">
                             <label className="relative inline-block w-15 h-8.5">
@@ -65,9 +84,9 @@ export default function CollageCreationPublishPart(
                         </div>
                     </div>
                     <div className="flex flex-col">
-                        <span className="text-sm">Alt Text</span>
-                        <textarea placeholder="Add Alt Text" className="border p-2 rounded-lg mt-2 w-lg"/>
-                        <span className="text-xs mt-2">This helps people using screen readers</span>
+                        <span className="text-sm text-olive-600">Alt Text</span>
+                        <textarea placeholder="Add Alt Text" className="border border-olive-300 p-2 rounded-lg mt-2 w-lg"/>
+                        <span className="text-xs mt-2 text-olive-600">This helps people using screen readers</span>
                     </div>
                 </div>
             </div>

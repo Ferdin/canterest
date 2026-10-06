@@ -41,6 +41,8 @@ interface CanvasState {
     activeTool: Tool | null;
     textStyle: TextStyle;
     addTextTrigger: number;
+    exportTrigger: number;
+    exportedImage: string | null;
 }
 
 export type LayerInfo = {
@@ -73,6 +75,8 @@ const initialState: CanvasState = {
         align: "center",
     },
     addTextTrigger: 0,
+    exportTrigger: 0,
+    exportedImage: null,
 }
 
 const canvasSlice = createSlice({
@@ -133,6 +137,13 @@ const canvasSlice = createSlice({
                 order: action.payload,
                 nonce: (state.layerOrderRequest?.nonce ?? 0) + 1,
             };
+        },
+        requestExport(state) {
+            state.exportTrigger += 1;
+            state.exportedImage = null;
+        },
+        setExportedImage(state, action: PayloadAction<string | null>){
+            state.exportedImage = action.payload;
         }
     },
 });
@@ -153,5 +164,7 @@ export const {
     setActiveTool,
     setTextStyle,
     triggerAddText,
+    requestExport,
+    setExportedImage
 } = canvasSlice.actions;
 export default canvasSlice.reducer;

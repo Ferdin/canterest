@@ -2,7 +2,7 @@ import { Ellipsis, Image, LineSquiggle, Redo2, Type, Undo2, X } from "lucide-rea
 import Canvas from "../CollageCreationComponents/Canvas";
 import CanvasComponents from "../CollageCreationComponents/CanvasComponents";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
-import { triggerUndo, triggerRedo, type Tool, setActiveTool } from "../../features/canvas/canvasSlice";
+import { triggerUndo, triggerRedo, type Tool, setActiveTool, requestExport } from "../../features/canvas/canvasSlice";
 import LayersPanel from "../CollageCreationComponents/LayersPanel";
 import TypeComponents from "../CollageCreationComponents/TypeComponents";
 import { useState } from "react";
@@ -51,7 +51,11 @@ export default function CollageCreationTool(){
                             <Ellipsis/>
                             <button 
                                 className="bg-red-600 px-4 py-4 rounded-xl text-white font-medium cursor-pointer hover:bg-red-700"
-                                onClick={() => setStep("publish")}
+                                onClick={() => {
+                                    dispatch(requestExport());
+                                    setStep("publish");
+                                    }
+                                }
                             >
                                 Next
                             </button>
