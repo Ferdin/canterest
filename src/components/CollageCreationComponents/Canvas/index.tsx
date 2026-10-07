@@ -18,14 +18,31 @@ type Point = { x: number; y: number };
 
 // x, y are the text's center as fractions (0–1) of the artboard.
 type TextData = TextStyle & { text: string; x: number; y: number };
+type ImageLayerData = { src: string; x: number; y: number; width: number; aspect: number};
 
 type DrawLayer = { kind: "draw"; canvas: HTMLCanvasElement };
 type TextLayer = { kind: "text"; el: HTMLDivElement; data: TextData };
-type Layer = DrawLayer | TextLayer;
+type ImageLayer = { kind: "image"; el: HTMLDivElement; img: HTMLImageElement; data: ImageLayerData};
+type Layer = DrawLayer | TextLayer | ImageLayer;
 
 type LayerSnapshot =
     | { kind: "draw"; image: HTMLCanvasElement }
-    | { kind: "text"; data: TextData };
+    | { kind: "text"; data: TextData }
+    | { kind: "image"; data: ImageLayerData };
+
+type ElementDrag = {
+    id: number;
+    pointerId: number;
+    mode: "move" | "resize";
+    startX: number;
+    startY: number;
+    origX: number;
+    origY: number;
+    origWidth: number;
+    before: LayerSnapshot;
+    moved: boolean;
+}    
+
 
 type LayerChange = {
     layerId: number;
@@ -41,17 +58,6 @@ type HistoryEntry = {
     time: number;
 };
 
-type TextDrag = {
-    id: number;
-    pointerId: number;
-    startX: number;
-    startY: number;
-    origX: number;
-    origY: number;
-    before: LayerSnapshot;
-    moved: boolean;
-};
-
 type EditSession = { id: number; before: LayerSnapshot | null; orderBefore: number[] };
 
 const MAX_HISTORY = 30;
@@ -63,6 +69,9 @@ const EXPORT_SCALE = 2;
 const TEXT_PAD_X = 8;
 const TEXT_PAD_Y = 4;
 const TEXT_LINE_HEIGHT = 1.2;
+
+const MIN_IMAGE_PX = 24;
+const HANDLE_SIZE = 14;
 
 const copyCanvas = (source: HTMLCanvasElement) => {
     const copy = document.createElement("canvas");
@@ -86,10 +95,16 @@ const sameOrder = (a: number[], b: number[]) =>
 
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
 
-const snapshotLayer = (layer: Layer): LayerSnapshot =>
-    layer.kind === "draw"
-        ? { kind: "draw", image: copyCanvas(layer.canvas) }
-        : { kind: "text", data: { ...layer.data } };
+const snapshotLayer = (layer: Layer): LayerSnapshot => {
+    switch (layer.kind) {
+        case "draw":
+            return { kind: "draw", image: copyCanvas(layer.canvas) };
+        case "text":
+            return { kind: "text", data: { ...layer.data } };
+        case "image":
+            return { kind: "image", data: { ...layer.data } };
+    }
+};
 
 const layerNode = (layer: Layer) => (layer.kind === "draw" ? layer.canvas : layer.el);
 
@@ -175,6 +190,8 @@ export default function Canvas() {
     const overlayRef = useRef<HTMLCanvasElement>(null);
     const cursorRef = useRef<HTMLDivElement>(null);
 
+    const elementDragRef = useRef<ElementDrag | null>(null);
+
     const layerMapRef = useRef(new Map<number, Layer>());
     const layerOrderRef = useRef<number[]>([]); // bottom → top
     const activeLayerIdRef = useRef<number | null>(null);
@@ -185,12 +202,13 @@ export default function Canvas() {
     const pendingBeforeRef = useRef(new Map<number, LayerSnapshot | null>());
     const pendingOrderBeforeRef = useRef<number[]>([]);
 
-    const textDragRef = useRef<TextDrag | null>(null);
     const editSessionRef = useRef<EditSession | null>(null);
     const pendingCreateRef = useRef<Point | null>(null);
 
     const historyRef = useRef<HistoryEntry[]>([]);
     const historyIndexRef = useRef(0);
+
+    const addImagesRequest = useAppSelector((state) => state.canvas.addImagesRequest);
 
     const color = useAppSelector((state) => state.canvas.color);
     const brushSize = useAppSelector((state) => state.canvas.brushSize);
@@ -240,8 +258,17 @@ export default function Canvas() {
         for (const id of layerOrderRef.current) {
             const layer = layerMapRef.current.get(id);
             if (!layer) continue;
-            if (layer.kind === "draw") ctx.drawImage(layer.canvas, 0, 0, width, height);
-            else drawTextLayer(ctx, layer.data, width, height);
+
+            if (layer.kind === "draw") {
+                ctx.drawImage(layer.canvas, 0, 0, width, height);
+            } else if (layer.kind === "text") {
+                drawTextLayer(ctx, layer.data, width, height);
+            } else {
+                await layer.img.decode().catch(() => {}); // a redone image may still be loading
+                const w = layer.data.width * width;
+                const h = w * layer.data.aspect;
+                ctx.drawImage(layer.img, layer.data.x * width - w / 2, layer.data.y * height - h / 2, w, h);
+            }
         }
 
         const blob = await new Promise<Blob | null>((resolve) => out.toBlob(resolve, "image/png"));
@@ -277,9 +304,14 @@ export default function Canvas() {
 
     const highlightActive = () => {
         layerMapRef.current.forEach((layer, id) => {
-            if (layer.kind !== "text") return;
-            layer.el.style.outline =
-                id === activeLayerIdRef.current ? "1.5px dashed rgba(0, 0, 0, 0.45)" : "none";
+            if (layer.kind === "draw") return;
+            const active = id === activeLayerIdRef.current;
+            layer.el.style.outline = active ? "1.5px dashed rgba(0, 0, 0, 0.45)" : "none";
+
+            if (layer.kind === "image") {
+                const handle = layer.el.querySelector<HTMLElement>("[data-resize-handle]");
+                if (handle) handle.style.display = active ? "block" : "none";
+            }
         });
     };
 
@@ -287,11 +319,17 @@ export default function Canvas() {
         const layers = layerOrderRef.current.flatMap<LayerInfo>((id) => {
             const layer = layerMapRef.current.get(id);
             if (!layer) return [];
-            if (layer.kind === "draw") {
-                return [{ id, kind: "draw", name: `Layer ${id}`, thumbnail: makeThumbnail(layer.canvas) }];
+
+            switch (layer.kind) {
+                case "draw":
+                    return [{ id, kind: "draw", name: `Layer ${id}`, thumbnail: makeThumbnail(layer.canvas) }];
+                case "text": {
+                    const snippet = layer.data.text.trim().split("\n")[0].slice(0, 24);
+                    return [{ id, kind: "text", name: snippet || "Text", thumbnail: "" }];
+                }
+                case "image":
+                    return [{ id, kind: "image", name: "Image", thumbnail: layer.data.src }];
             }
-            const snippet = layer.data.text.trim().split("\n")[0].slice(0, 24);
-            return [{ id, kind: "text", name: snippet || "Text", thumbnail: "" }];
         });
         dispatch(setLayers(layers));
         highlightActive();
@@ -343,6 +381,13 @@ export default function Canvas() {
         if (document.activeElement !== el) el.innerText = data.text;
     };
 
+    const renderImage = (layer: ImageLayer) => {
+        const { el, data } = layer;
+        el.style.left = `${data.x * 100}%`;
+        el.style.top = `${data.y * 100}%`;
+        el.style.width = `${data.width * 100}%`;
+    };
+
     const createTextLayer = (id: number, data: TextData): TextLayer | null => {
         const container = layersRef.current;
         if (!container) return null;
@@ -350,11 +395,9 @@ export default function Canvas() {
         const el = document.createElement("div");
         el.dataset.layerId = String(id);
         el.dataset.textLayer = "";
-        // el.style.cssText =
-        //     "position:absolute;transform:translate(-50%,-50%);white-space:pre;line-height:1.2;padding:4px 8px;outline-offset:2px;";
         el.style.cssText =
             `position:absolute;transform:translate(-50%,-50%);white-space:pre;` +
-            `line-height:${TEXT_LINE_HEIGHT};padding:${TEXT_PAD_Y}px ${TEXT_PAD_X}px;outline-offset:2px;`;    
+            `line-height:${TEXT_LINE_HEIGHT};padding:${TEXT_PAD_Y}px ${TEXT_PAD_X}px;outline-offset:2px;`;
         setEditable(el, false);
 
         container.appendChild(el);
@@ -364,12 +407,46 @@ export default function Canvas() {
         return layer;
     };
 
+    const createImageLayer = (id: number, data: ImageLayerData): ImageLayer | null => {
+        const container = layersRef.current;
+        if (!container) return null;
+
+        const el = document.createElement("div");
+        el.dataset.layerId = String(id);
+        el.dataset.imageLayer = "";
+        el.style.cssText =
+            "position:absolute;transform:translate(-50%,-50%);cursor:move;outline-offset:2px;" +
+            "user-select:none;-webkit-user-select:none;";
+
+        const img = document.createElement("img");
+        img.src = data.src;
+        img.alt = "";
+        img.draggable = false;
+        img.style.cssText =
+            "display:block;width:100%;height:auto;pointer-events:none;user-select:none;";
+
+        const handle = document.createElement("div");
+        handle.dataset.resizeHandle = "";
+        handle.style.cssText =
+            `position:absolute;right:-${HANDLE_SIZE / 2}px;bottom:-${HANDLE_SIZE / 2}px;` +
+            `width:${HANDLE_SIZE}px;height:${HANDLE_SIZE}px;background:#fff;` +
+            `border:1.5px solid #111;border-radius:50%;cursor:nwse-resize;display:none;`;
+
+        el.append(img, handle);
+        container.appendChild(el);
+
+        const layer: ImageLayer = { kind: "image", el, img, data };
+        layerMapRef.current.set(id, layer);
+        renderImage(layer);
+        return layer;
+    };
+
     const removeLayer = (id: number) => {
         const layer = layerMapRef.current.get(id);
         if (layer) layerNode(layer).remove();
         layerMapRef.current.delete(id);
         layerOrderRef.current = layerOrderRef.current.filter((other) => other !== id);
-        if (textDragRef.current?.id === id) textDragRef.current = null;
+        if (elementDragRef.current?.id === id) elementDragRef.current = null;
         if (editSessionRef.current?.id === id) editSessionRef.current = null;
         if (activeLayerIdRef.current === id) setActive(null);
     };
@@ -404,6 +481,16 @@ export default function Canvas() {
                 renderText(layer);
             } else {
                 createTextLayer(id, { ...snapshot.data });
+            }
+            return;
+        }
+
+        if (snapshot.kind === "image") {
+            if (layer?.kind === "image") {
+                layer.data = { ...snapshot.data };
+                renderImage(layer);
+            } else {
+                createImageLayer(id, { ...snapshot.data });
             }
             return;
         }
@@ -576,7 +663,7 @@ export default function Canvas() {
         if (layer.kind === "text") dispatch(setTextStyle(pickTextStyle(layer.data)));
 
         // Selecting a layer opens the matching tool.
-        const tool = layer.kind === "text" ? "text" : "draw";
+        const tool = layer.kind;
         if (activeTool !== tool) dispatch(setActiveTool(tool));
     }, [activeLayerId]);
 
@@ -632,10 +719,9 @@ export default function Canvas() {
         };
 
         resizeCanvas();
-        window.addEventListener("resize", resizeCanvas);
         const observer = new ResizeObserver(resizeCanvas);
         observer.observe(area);
-        return () => window.removeEventListener("resize", resizeCanvas);
+        return () => observer.disconnect();
     }, []);
 
     useEffect(() => {
@@ -718,6 +804,63 @@ export default function Canvas() {
         window.addEventListener("keydown", onKeyDown);
         return () => window.removeEventListener("keydown", onKeyDown);
     }, [dispatch]);
+
+    useEffect(() => {
+        if (!addImagesRequest) return;
+        let cancelled = false;
+
+        const loadImage = (src: string) =>
+            new Promise<HTMLImageElement | null>((resolve) => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.onerror = () => resolve(null);
+                img.src = src;
+            });
+
+        Promise.all(addImagesRequest.srcs.map(loadImage)).then((images) => {
+            if (cancelled) return;
+            const overlay = overlayRef.current;
+            if (!overlay || !overlay.width || !overlay.height) return;
+
+            const W = overlay.width;
+            const H = overlay.height;
+            if (editSessionRef.current) finishEditing();
+
+            const orderBefore = [...layerOrderRef.current];
+            const changes: LayerChange[] = [];
+            let lastId: number | null = null;
+
+            for (const [i, img] of images.entries()) {
+                if (!img || !img.naturalWidth) continue;
+
+                const aspect = img.naturalHeight / img.naturalWidth;
+                // Fit within 60% of the artboard in both directions.
+                const widthPx = Math.min(W * 0.6, (H * 0.6) / aspect);
+                const offset = i * 0.03; // fan out multiple uploads slightly
+
+                const id = nextLayerIdRef.current++;
+                const layer = createImageLayer(id, {
+                    src: img.src,
+                    x: clamp01(0.5 + offset),
+                    y: clamp01(0.5 + offset),
+                    width: widthPx / W,
+                    aspect,
+                });
+                if (!layer) continue;
+
+                layerOrderRef.current = [...layerOrderRef.current, id];
+                changes.push({ layerId: id, before: null, after: snapshotLayer(layer) });
+                lastId = id;
+            }
+
+            if (lastId !== null) setActive(lastId);
+            pushHistory(changes, orderBefore, [...layerOrderRef.current]);
+        });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [addImagesRequest]);
 
     // ---------- brush helpers ----------
 
@@ -948,37 +1091,37 @@ export default function Canvas() {
         pushHistory(changes, pendingOrderBeforeRef.current, [...layerOrderRef.current]);
     };
 
-    // ---------- text pointer handlers (layers container, Text tool only) ----------
-
     const handleLayersPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
-        if (!isTextTool || event.button !== 0) return;
-        const textEl = (event.target as HTMLElement).closest<HTMLDivElement>("[data-text-layer]");
+        if (isDrawTool || event.button !== 0) return;
+        const target = event.target as HTMLElement;
+        const el = target.closest<HTMLElement>("[data-text-layer], [data-image-layer]");
 
-        if (textEl) {
-            const id = Number(textEl.dataset.layerId);
+        if (el) {
+            const id = Number(el.dataset.layerId);
             const layer = layerMapRef.current.get(id);
-            if (layer?.kind !== "text") return;
-            if (editSessionRef.current?.id === id) return; // editing: let the caret move
+            if (!layer || layer.kind === "draw") return;
+            if (editSessionRef.current?.id === id) return; // editing text: let the caret move
 
             setActive(id);
-            textEl.setPointerCapture(event.pointerId);
-            textDragRef.current = {
+            el.setPointerCapture(event.pointerId);
+            elementDragRef.current = {
                 id,
                 pointerId: event.pointerId,
+                mode: layer.kind === "image" && target.closest("[data-resize-handle]") ? "resize" : "move",
                 startX: event.clientX,
                 startY: event.clientY,
                 origX: layer.data.x,
                 origY: layer.data.y,
+                origWidth: layer.kind === "image" ? layer.data.width : 0,
                 before: snapshotLayer(layer),
                 moved: false,
             };
             return;
         }
 
-        // Empty artboard. While editing, this click only finishes the edit (via blur).
-        if (event.target !== event.currentTarget || editSessionRef.current) return;
+        // Empty artboard: only the Text tool creates something here.
+        if (!isTextTool || event.target !== event.currentTarget || editSessionRef.current) return;
 
-        // Created on pointer up, after the browser's own focus handling for this click.
         const rect = event.currentTarget.getBoundingClientRect();
         pendingCreateRef.current = {
             x: clamp01((event.clientX - rect.left) / rect.width),
@@ -987,12 +1130,12 @@ export default function Canvas() {
     };
 
     const handleLayersPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
-        const drag = textDragRef.current;
+        const drag = elementDragRef.current;
         if (!drag || event.pointerId !== drag.pointerId) return;
 
         const layer = layerMapRef.current.get(drag.id);
         const container = layersRef.current;
-        if (layer?.kind !== "text" || !container) return;
+        if (!layer || layer.kind === "draw" || !container) return;
 
         const dx = event.clientX - drag.startX;
         const dy = event.clientY - drag.startY;
@@ -1000,18 +1143,40 @@ export default function Canvas() {
         drag.moved = true;
 
         const rect = container.getBoundingClientRect();
+
+        if (drag.mode === "resize" && layer.kind === "image") {
+            const { aspect } = layer.data;
+            const origWidthPx = drag.origWidth * rect.width;
+            const origHeightPx = origWidthPx * aspect;
+
+            // Keep the top-left corner fixed while the bottom-right follows the pointer.
+            const left = drag.origX * rect.width - origWidthPx / 2;
+            const top = drag.origY * rect.height - origHeightPx / 2;
+
+            // Follow whichever direction moved further, keeping the aspect ratio.
+            const grow = Math.max(dx, dy / aspect);
+            const widthPx = Math.max(MIN_IMAGE_PX, origWidthPx + grow);
+
+            layer.data.width = widthPx / rect.width;
+            layer.data.x = (left + widthPx / 2) / rect.width;
+            layer.data.y = (top + (widthPx * aspect) / 2) / rect.height;
+            renderImage(layer);
+            return;
+        }
+
         layer.data.x = clamp01(drag.origX + dx / rect.width);
         layer.data.y = clamp01(drag.origY + dy / rect.height);
-        renderText(layer);
+        if (layer.kind === "text") renderText(layer);
+        else renderImage(layer);
     };
 
     const handleLayersPointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
-        const drag = textDragRef.current;
+        const drag = elementDragRef.current;
 
         if (drag && event.pointerId === drag.pointerId) {
-            textDragRef.current = null;
+            elementDragRef.current = null;
             const layer = layerMapRef.current.get(drag.id);
-            if (layer?.kind === "text") {
+            if (layer && layer.kind !== "draw") {
                 if (layer.el.hasPointerCapture(event.pointerId)) {
                     layer.el.releasePointerCapture(event.pointerId);
                 }
@@ -1033,8 +1198,8 @@ export default function Canvas() {
     };
 
     const handleLayersPointerCancel = () => {
-        const drag = textDragRef.current;
-        textDragRef.current = null;
+        const drag = elementDragRef.current;
+        elementDragRef.current = null;
         pendingCreateRef.current = null;
         if (drag?.moved) applyLayerState(drag.id, drag.before); // put it back
     };
@@ -1067,7 +1232,7 @@ export default function Canvas() {
             >
                 <div
                     ref={layersRef}
-                    className={`absolute inset-0 ${isTextTool ? "cursor-text" : ""}`}
+                    className={`absolute inset-0 ${isTextTool ? "cursor-text" : ""} ${isDrawTool ? "" : "touch-none"}`}
                     onPointerDown={handleLayersPointerDown}
                     onPointerMove={handleLayersPointerMove}
                     onPointerUp={handleLayersPointerUp}

@@ -43,11 +43,12 @@ interface CanvasState {
     addTextTrigger: number;
     exportTrigger: number;
     exportedImage: string | null;
+    addImagesRequest: {srcs: string[]; nonce: number} | null,
 }
 
 export type LayerInfo = {
     id: number;
-    kind: "draw" | "text";
+    kind: "draw" | "text" | "image";
     name: string;
     thumbnail: string;
 }
@@ -77,6 +78,7 @@ const initialState: CanvasState = {
     addTextTrigger: 0,
     exportTrigger: 0,
     exportedImage: null,
+    addImagesRequest: null
 }
 
 const canvasSlice = createSlice({
@@ -144,6 +146,12 @@ const canvasSlice = createSlice({
         },
         setExportedImage(state, action: PayloadAction<string | null>){
             state.exportedImage = action.payload;
+        },
+        requestAddImages(state, action: PayloadAction<string[]>) {
+            state.addImagesRequest = {
+                srcs: action.payload,
+                nonce: (state.addImagesRequest?.nonce ?? 0) + 1,
+            }
         }
     },
 });
@@ -165,6 +173,7 @@ export const {
     setTextStyle,
     triggerAddText,
     requestExport,
-    setExportedImage
+    setExportedImage,
+    requestAddImages
 } = canvasSlice.actions;
 export default canvasSlice.reducer;

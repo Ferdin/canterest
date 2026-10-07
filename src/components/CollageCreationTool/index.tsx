@@ -7,6 +7,7 @@ import LayersPanel from "../CollageCreationComponents/LayersPanel";
 import TypeComponents from "../CollageCreationComponents/TypeComponents";
 import { useState } from "react";
 import CollageCreationPublishPart from "../CollageCreationPublishPart";
+import ImageComponents from "../CollageCreationComponents/ImageComponents";
 
 export default function CollageCreationTool(){
 
@@ -100,6 +101,7 @@ export default function CollageCreationTool(){
                 <div className="w-[40%] px-6 mt-4">
                     {activeTool === "draw" && <CanvasComponents />}
                     {activeTool === "text" && <TypeComponents />}
+                    {activeTool === "image" && <ImageComponents/>}
                 </div>
             </div>
             {step === "publish" && (
