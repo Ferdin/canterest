@@ -15,6 +15,8 @@ export default function CollageCreationTool(){
     const canUndo = useAppSelector((state) => state.canvas.canUndo);
     const canRedo = useAppSelector((state) => state.canvas.canRedo);
 
+    const hasLayers = useAppSelector((state) => state.canvas.layers.length > 0);
+
     const [step, setStep] = useState<"create" | "publish">("create");
 
     const TOOLS: {id: Tool, label: string, Icon: typeof Type}[] = [
@@ -50,8 +52,11 @@ export default function CollageCreationTool(){
                                 <Redo2 onClick={() => dispatch(triggerRedo())}/>
                             </button>
                             <Ellipsis/>
-                            <button 
-                                className="bg-red-600 px-4 py-4 rounded-xl text-white font-medium cursor-pointer hover:bg-red-700"
+                            <button
+                                type="button"
+                                disabled={!hasLayers} 
+                                className="bg-red-600 px-4 py-4 rounded-xl text-white font-medium cursor-pointer hover:bg-red-700
+                                            disabled:cursor-not-allowed disabled:bg-gray-300 disabled:hover:bg-gray-300"
                                 onClick={() => {
                                     dispatch(requestExport());
                                     setStep("publish");
