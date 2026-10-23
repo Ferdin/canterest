@@ -6,6 +6,7 @@ import MainWrapper from "./MainWrapper";
 import SideNav from "./SideNav";
 import CreateBoardModal from "./CreateBoardModal";
 import { closeCreateBoardModal } from "../features/ui/uiSlice";
+import Pins from "./Pins";
 
 const HIDE_MAIN_NAV_PATHS = ["/collage-creation-tool"];
 
@@ -27,6 +28,7 @@ export default function AppLayout() {
             )}
             <div className={`${activeMenu ? `w-[70%]` : `w-full`} transition`}>
                 {!hideMainNav && <MainNav />}
+                {location.pathname === "/" && <Pins/> }
                 <Outlet />
             </div>
 
