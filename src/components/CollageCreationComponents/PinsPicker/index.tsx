@@ -17,11 +17,12 @@ export default function PinsPicker() {
         setAddError(null);
         try {
             // Download first so the canvas gets a same-origin blob URL (keeps export working).
-            const response = await fetch(pin.media_url);
+            const response = await fetch(pin.media_url, { mode: "cors", cache: "reload" });
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
             const blob = await response.blob();
             dispatch(requestAddImages([URL.createObjectURL(blob)]));
-        } catch {
+        } catch (error) {
+            console.error("Adding pin failed:", pin.media_url, error);
             setAddError("Couldn't add that pin. Please try again.");
         } finally {
             setAddingId(null);
