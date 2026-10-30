@@ -8,6 +8,7 @@ import TypeComponents from "../CollageCreationComponents/TypeComponents";
 import { useState } from "react";
 import CollageCreationPublishPart from "../CollageCreationPublishPart";
 import ImageComponents from "../CollageCreationComponents/ImageComponents";
+import PinsPicker from "../CollageCreationComponents/PinsPicker";
 
 export default function CollageCreationTool(){
 
@@ -104,6 +105,7 @@ export default function CollageCreationTool(){
                     </div>
                 </div>
                 <div className="w-[40%] px-6 mt-4">
+                    {activeTool === null && <PinsPicker/>}
                     {activeTool === "draw" && <CanvasComponents />}
                     {activeTool === "text" && <TypeComponents />}
                     {activeTool === "image" && <ImageComponents/>}

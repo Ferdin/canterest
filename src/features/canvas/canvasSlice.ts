@@ -68,7 +68,7 @@ const initialState: CanvasState = {
     activeLayerId: null,
     backgroundColor: "#ffffff",
     layerOrderRequest: null,
-    activeTool: "draw",
+    activeTool: null,
     textStyle: {
         fontFamily: TEXT_FONTS[0].value,
         fontSize: 32,
