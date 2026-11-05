@@ -34,7 +34,7 @@ export default function Pins() {
     return (
         <div className="columns-2 gap-4 px-4 py-4 sm:columns-3 lg:columns-4 xl:columns-5">
             {pins.map((pin) => (
-                <article key={pin.id} className="mb-4 break-inside-avoid">
+                <article key={pin.id} className="mb-4 break-inside-avoid cursor-pointer">
                     <img
                         src={pin.media_url}
                         alt={pin.title ?? ""}

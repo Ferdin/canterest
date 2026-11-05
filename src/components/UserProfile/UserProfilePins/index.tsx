@@ -1,6 +1,7 @@
 import { useParams } from "react-router-dom";
 import { useGetPinsByUsernameQuery } from "../../../features/pins/pinsApi";
 import Loading from "../../MiscAnimatedComponents/Loading";
+import { Settings2 } from "lucide-react";
 
 export default function UserProfilePins(){
     const { username } = useParams<{ username: string }>();
@@ -13,6 +14,11 @@ export default function UserProfilePins(){
     return(
         <div className="w-full px-8 mt-10">
 
+            <div className="flex flex-row mb-6 gap-4 items-center">
+                <Settings2 className="cursor-pointer"/>
+                <button className="bg-olive-300 rounded-lg p-2 cursor-pointer hover:bg-olive-400">Favorites</button>
+                <button className="bg-olive-300 rounded-lg p-2 cursor-pointer hover:bg-olive-400">Created by you</button>
+            </div>
             {pins?.length === 0 && (
                 <p className="text-center text-gray-500">No pins yet.</p>
             )}
@@ -26,9 +32,6 @@ export default function UserProfilePins(){
                                 alt={pin.alt_text || pin.title || "Pin"}
                                 className="w-full rounded-2xl"
                             />
-                            {pin.title && (
-                                <p className="text-sm font-medium mt-1 px-1">{pin.title}</p>
-                            )}
                         </div>
                     ))}
                 </div>
