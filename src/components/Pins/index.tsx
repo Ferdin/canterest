@@ -1,6 +1,10 @@
-import { useGetPinsQuery } from "../../features/pins/pinsApi"
+import { useState } from "react";
+import { useGetPinsQuery, type PinOut } from "../../features/pins/pinsApi"
 import Loading from "../MiscAnimatedComponents/Loading";
 import PinBox from "../PinBox";
+import PinDetails from "../PinDetails";
+
+const [openPinId, setOpenPinId] = useState<PinOut["id"] | null>(null);
 
 export default function Pins() {
     const { data: pins = [], isLoading, isError, refetch } = useGetPinsQuery();
@@ -34,18 +38,31 @@ export default function Pins() {
 
     return (
         <div className="columns-2 gap-4 px-4 py-4 sm:columns-3 lg:columns-4 xl:columns-5">
-            {pins.map((pin) => (
-                <PinBox>
-                    <article key={pin.id} className="mb-4 break-inside-avoid cursor-pointer">
-                        <img
-                            src={pin.media_url}
-                            alt={pin.title ?? ""}
-                            loading="lazy"
-                            className="w-full rounded-2xl bg-gray-100"
-                            />
-                    </article>
-                </PinBox>
-            ))}
+            {pins.map((pin) => {
+                const isOpen = openPinId === pin.id;
+                return (
+                    <PinBox key={pin.id} className="mb-4 break-inside-avoid">
+                        <article>
+                            <button
+                                type="button"
+                                onClick={() => setOpenPinId(isOpen ? null : pin.id)}
+                                aria-expanded={isOpen}
+                                aria-label={isOpen ? "Close pin details" : `Open ${pin.title || "pin"}`}
+                                className="block w-full cursor-pointer"
+                            >
+                                <img
+                                    src={pin.media_url}
+                                    alt={pin.title ?? ""}
+                                    loading="lazy"
+                                    crossOrigin="anonymous"
+                                    className="w-full rounded-2xl bg-gray-100"
+                                />
+                            </button>
+                            {isOpen && <PinDetails pinId={pin.id} />}
+                        </article>
+                    </PinBox>
+                );
+            })}
         </div>
-    )
+    );
 }

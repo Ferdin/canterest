@@ -28,6 +28,26 @@ export interface PinOut extends PinCreate {
     days_until_expiration: number | null;
 }
 
+export type PinUser = {
+    id: number;
+    username: string;
+    avatar_url: string | null;
+}
+
+export type PinDetail = Omit<PinOut, "description"> & {
+    description: string | null;
+    creator: PinUser;
+    like_count: number;
+    liked_by_me: boolean;
+}
+
+export type CommentOut = {
+    id: number;
+    body: string;
+    created_at: string;
+    author: PinUser;
+}
+
 export const pinsApi = createApi({
     reducerPath: "pinsApi",
     baseQuery: fetchBaseQuery({
@@ -38,7 +58,7 @@ export const pinsApi = createApi({
             return headers;
         },
     }),
-    tagTypes:["Pin"],
+    tagTypes:["Pin", "PinDetail", "Comment"],
     endpoints: (builder) => ({
         uploadMedia: builder.mutation<UploadResponse, FormData>({
             query: (formData) => ({
@@ -76,14 +96,57 @@ export const pinsApi = createApi({
             query: () => "/pins?mine=true&status=draft",
             providesTags: ["Pin"],
         }),
+        getPinDetail: builder.query<PinDetail, PinOut["id"]>({
+            query: (pinId) => `/pins/${pinId}`,
+            providesTags: (_result, _error, pinId) => [{ type: "PinDetail", id: pinId }],
+        }),
+        getPinComments: builder.query<CommentOut[], PinOut["id"]>({
+            query: (pinId) => `/pins/${pinId}/comments`,
+            providesTags: (_result, _error, pinId) => [{ type: "Comment", id: pinId }],
+        }),
+
+        addComment: builder.mutation<CommentOut, { pinId: PinOut["id"]; body: string }>({
+            query: ({ pinId, body }) => ({
+                url: `/pins/${pinId}/comments`,
+                method: "POST",
+                body: { body },
+            }),
+            invalidatesTags: (_result, _error, { pinId }) => [{ type: "Comment", id: pinId }],
+        }),
+
+        toggleLike: builder.mutation<void, { pinId: PinOut["id"]; liked: boolean }>({
+            // liked = the current state, so a liked pin gets unliked.
+            query: ({ pinId, liked }) => ({
+                url: `/pins/${pinId}/like`,
+                method: liked ? "DELETE" : "POST",
+            }),
+            // Update the heart and count immediately; roll back if the request fails.
+            async onQueryStarted({ pinId, liked }, { dispatch, queryFulfilled }) {
+                const patch = dispatch(
+                    pinsApi.util.updateQueryData("getPinDetail", pinId, (draft) => {
+                        draft.liked_by_me = !liked;
+                        draft.like_count += liked ? -1 : 1;
+                    })
+                );
+                try {
+                    await queryFulfilled;
+                } catch {
+                    patch.undo();
+                }
+            },
+        }),
     }),
 });
 
-export const { 
-    useUploadMediaMutation, 
+export const {
+    useUploadMediaMutation,
     useCreatePinMutation,
-    useUpdatePinMutation, 
+    useUpdatePinMutation,
     useGetPinsQuery,
     useGetMyDraftsQuery,
     useGetPinsByUsernameQuery,
+    useGetPinDetailQuery,
+    useGetPinCommentsQuery,
+    useAddCommentMutation,
+    useToggleLikeMutation,
 } = pinsApi;
