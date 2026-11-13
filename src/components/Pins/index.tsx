@@ -4,9 +4,9 @@ import Loading from "../MiscAnimatedComponents/Loading";
 import PinBox from "../PinBox";
 import PinDetails from "../PinDetails";
 
-const [openPinId, setOpenPinId] = useState<PinOut["id"] | null>(null);
 
 export default function Pins() {
+    const [openPinId, setOpenPinId] = useState<PinOut["id"] | null>(null);
     const { data: pins = [], isLoading, isError, refetch } = useGetPinsQuery();
 
     if (isLoading) {
