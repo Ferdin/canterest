@@ -6,9 +6,11 @@ interface PinBoxType {
     selected?: boolean;
 }
 
-export default function PinBox( {children, className = "", selected = false}: PinBoxType) {
+export default function PinBox( {children, className = "", selected = false, ...rest}: PinBoxType) {
     return(
-        <div className={`p-2 border rounded-3xl transition-colors ${
+        <div 
+            {...rest}
+            className={`p-2 border rounded-3xl transition-colors ${
             selected ? "border-olive-300" : "border-transparent"
         } ${className}`}>
             {children}

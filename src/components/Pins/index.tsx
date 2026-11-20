@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useGetPinsQuery, type PinOut } from "../../features/pins/pinsApi"
 import Loading from "../MiscAnimatedComponents/Loading";
 import PinBox from "../PinBox";
@@ -10,6 +10,12 @@ export default function Pins() {
     const [openPinId, setOpenPinId] = useState<PinOut["id"] | null>(null);
     const { data: pins = [], isLoading, isError, refetch } = useGetPinsQuery();
 
+    useEffect(() => {
+        if (openPinId === null) return;
+        document
+            .getElementById(`pin-${openPinId}`)
+            ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, [openPinId]);
     if (isLoading) {
         return (
             <div className="flex justify-center py-16">
@@ -42,15 +48,21 @@ export default function Pins() {
             {pins.map((pin) => {
                 const isOpen = openPinId === pin.id;
                 return (
-                    <PinBox key={pin.id} selected={isOpen} className="mb-4 break-inside-avoid">
+                    <PinBox 
+                        key={pin.id} 
+                        selected={isOpen} 
+                        className={`mb-4 break-inside-avoid scroll-mt-24 ${
+                            isOpen ? "[column-span:all] w-full max-w-4xl" : ""
+                        }`}
+                    >
                         {isOpen && <PinDetailsTopSection  pinId={pin.id}/>}
-                        <article className="pt-1">
+                        <article className={isOpen ? "grid gap-6 p-2 md:grid-cols-2" : "pt-1"}>
                             <button
                                 type="button"
                                 onClick={() => setOpenPinId(isOpen ? null : pin.id)}
                                 aria-expanded={isOpen}
                                 aria-label={isOpen ? "Close pin details" : `Open ${pin.title || "pin"}`}
-                                className="block w-full cursor-pointer"
+                                className="block w-full cursor-pointer self-start"
                             >
                                 <img
                                     src={pin.media_url}
