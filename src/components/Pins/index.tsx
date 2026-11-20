@@ -3,6 +3,7 @@ import { useGetPinsQuery, type PinOut } from "../../features/pins/pinsApi"
 import Loading from "../MiscAnimatedComponents/Loading";
 import PinBox from "../PinBox";
 import PinDetails from "../PinDetails";
+import PinDetailsTopSection from "../PinDetailsTopSection";
 
 
 export default function Pins() {
@@ -41,8 +42,9 @@ export default function Pins() {
             {pins.map((pin) => {
                 const isOpen = openPinId === pin.id;
                 return (
-                    <PinBox key={pin.id} className="mb-4 break-inside-avoid">
-                        <article>
+                    <PinBox key={pin.id} selected={isOpen} className="mb-4 break-inside-avoid">
+                        {isOpen && <PinDetailsTopSection  pinId={pin.id}/>}
+                        <article className="pt-1">
                             <button
                                 type="button"
                                 onClick={() => setOpenPinId(isOpen ? null : pin.id)}
